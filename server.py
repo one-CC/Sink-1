@@ -221,7 +221,7 @@ ip2CarNumber = {
 ip2UWB = {
     '127.0.0.1': 1,
     '169.254.62.154': 2,
-    '192.1668.1.3': 3,
+    '192.168.31.222': 3,
 }
 car_list = {}
 for i in range(1, total_car_number + 1):
@@ -232,7 +232,7 @@ for i in range(1, 4):
 
 lock = threading.Lock()
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-host = '192.168.43.250'
+host = '192.168.31.66'
 port = 8888
 # host = socket.gethostname()
 # port = 6666

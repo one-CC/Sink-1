@@ -4,6 +4,7 @@
 # @Site : 
 # @File : gps_transform.py
 # @Software: PyCharm
+import math
 from pyproj import CRS, Transformer
 
 crs = CRS.from_epsg(4326)
@@ -15,15 +16,13 @@ crs = CRS.from_epsg(4326)
 crs_cs = CRS.from_epsg(32648)
 
 transformer = Transformer.from_crs(crs, crs_cs)
-
-gps1 = [0, 102]
-gps2 = [0, 105]
-gps3 = [0, 108]
+gps1 = [30.75184, 103.92972]
+gps2 = [30.75151, 103.92977]
 
 pos1 = transformer.transform(gps1[0], gps1[1])
 pos2 = transformer.transform(gps2[0], gps2[1])
 
-print(transformer.transform(gps1[0], gps1[1]))
-print(transformer.transform(gps2[0], gps2[1]))
-print(transformer.transform(gps3[0], gps3[1]))
+print('GPS[103.92972, 30.75184]由UTM转化为直角坐标:', pos1)
+print('GPS[103.92977, 30.75151]由UTM转化为直角坐标:', pos2)
+print('两个点的直线距离为：', math.sqrt((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2))
 

@@ -8,8 +8,8 @@ import socket
 import time
 import threading
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-host = socket.gethostname()
-port = 6666
+host = '192.168.31.66'
+port = 8888
 connected = False
 lock = threading.Lock()
 
