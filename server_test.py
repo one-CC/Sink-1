@@ -5,11 +5,13 @@
 # @File : car_control.py
 # @Software: PyCharm
 import time
+import math
 import msvcrt
 import socket
 import threading
 from location import trilateration
 from gps_transform import gps_transform
+INF = float('inf')
 
 
 class ControlShow:
@@ -169,6 +171,9 @@ class Car:
         self.car_number = car_number
         self.connected = False
         self.socket = None
+        self.position = []
+        self.acc = []
+        self.angle = []
 
     # 把每个小车作为一个线程单独接收。
     def receive(self):
@@ -177,7 +182,21 @@ class Car:
                 data = self.socket.recv(1024)
                 if not data:
                     break
-                print("收到来自小车 {0} 的消息：{1}".format(self.car_number, data.decode('utf-8')))
+                message = data.decode('utf-8')
+                print("收到来自小车 {0} 的消息：{1}".format(self.car_number, message))
+                m1, m2, m3 = message.split('#')  # 三种数据之间用#号分隔，分别是加速度、角度、GPS信息
+                m1 = m1.split(',')  # 每种数据本身用，号分隔
+                m2 = m2.split(',')
+                m3 = m3.split(',')
+                lock.acquire()
+                for item in m1:
+                    self.acc.append(round(float(item), 3))
+                for item in m2:
+                    self.angle.append(round(float(item), 3))
+                lon = float(m3[0] + '.' + m3[1])
+                lat = float(m3[2] + '.' + m3[3])
+                self.position = gps_transform([lon, lat])
+                lock.release()
         except:
             pass
         finally:
@@ -203,7 +222,9 @@ class UWB:
                 if not data:
                     break
                 print("收到来自UWB {0} 的消息：{1}".format(self.uwb_number, data.decode('utf-8')))
-                self.distance = float(data.decode('utf-8'))
+                lock.acquire()
+                self.distance = round(float(data.decode('utf-8')), 2)
+                lock.release()
         except:
             pass
         finally:
@@ -244,7 +265,28 @@ server.bind((host, port))
 server.listen(total_car_number + 3)
 
 
-# 多线程监听小车的连接请求
+# 计算每一个小车与目标的距离
+def calculate_distance(target_pos):
+    distances = [INF] * (total_car_number + 1)
+    for num, car in car_list.items():
+        if car.connected:
+            distance = math.sqrt((car.position[0] - target_pos[0]) ** 2 +
+                                 (car.position[1] - target_pos[1]) ** 2)
+            distances[num] = distance
+    return distances
+
+
+# 返回距离最近的三个小车
+def find_3_cars(target_pos):
+    distances = calculate_distance(target_pos)
+    sorted_dists = sorted(distances)
+    cars = []
+    cars.append(car_list[distances.index(sorted_dists[0])])
+    cars.append(car_list[distances.index(sorted_dists[1])])
+    cars.append(car_list[distances.index(sorted_dists[2])])
+    return cars
+
+# 多线程监听小车和UWB的连接请求
 def bind_socket():
     print("等待连接中...")
     while True:
@@ -275,9 +317,6 @@ def bind_socket():
                         thread = threading.Thread(target=car.receive)
                         thread.start()
                     print("小车 {0} 已连接！".format(car_number))
-                    # send_msg = "你已经接入系统，" + str(addr[0]) + '！'
-                    # buffersize = car.send(send_msg)
-                    # print("发送了{0}个比特过去".format(buffersize))
                 else:
                     pass
                 lock.release()
@@ -291,13 +330,25 @@ def main():
     p1 = gps_transform([103.93755, 30.75348])
     area_x = [p0[0], p1[0]]
     area_y = [p0[1], p1[1]]
+    target_detected = False
+    target_position = None
     while True:
         try:
             lock.acquire()
             if uwb_list[0].distance != 0 and uwb_list[1].distance != 0 and uwb_list[2].distance != 0:
                 target_position = trilateration(uwb_list[0].position, uwb_list[1].position, uwb_list[2].position,
                                                 uwb_list[0].distance, uwb_list[1].distance, uwb_list[2].distance)
+                uwb_list[0].distance = 0
+                uwb_list[1].distance = 0
+                uwb_list[2].distance = 0
+                target_detected = True
             lock.release()
+            if target_detected:
+                target_detected = False
+                # 如果检测到目标位置，首先选择最近的三个小车
+                selected_cars = find_3_cars(target_position)
+                # 计算每个小车的转向和移动距离
+
             keyboard_input = msvcrt.getch().decode('utf-8')
             if keyboard_input == "\x1b":
                 print("服务器关闭！")
