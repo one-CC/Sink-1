@@ -6,9 +6,10 @@
 # @Software: PyCharm
 import socket
 import time
+import numpy as np
 import threading
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-host = '192.168.31.66'
+host = '127.0.0.1'
 port = 8888
 connected = False
 lock = threading.Lock()
@@ -47,8 +48,10 @@ while True:
             print("连接成功啦！")
             connected = True
             thread.start()
-        send_msg = input("输入要发送的消息：")
-        if send_msg == 'q' or connected is False:
-            break
-        client.send(send_msg.encode('utf-8'))
+        for _ in range(1, 100000):
+            time.sleep(0.2)
+            send_msg = str(np.random.randint(1, 6)) + '#'
+            client.send(send_msg.encode('utf-8'))
+        print("done!")
+        break
 client.close()
