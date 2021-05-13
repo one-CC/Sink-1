@@ -2,6 +2,11 @@
 <project version="4">
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/README.md" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/car_control.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/models.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/server_SingleCar.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/server_pre.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/test.py" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/uwb_1.txt" charset="GBK" />
     <file url="file://$PROJECT_DIR$/uwb_2.txt" charset="GBK" />
     <file url="file://$PROJECT_DIR$/uwb_logs/uwb_1.txt" charset="GBK" />

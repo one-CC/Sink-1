@@ -1,20 +1,20 @@
-# -*- coding: utf-8 -*-
-# @Time : 2020/7/8 21:09
+# -*- coding utf-8 -*-
+# @Time : 2021/3/16 15:56
 # @Author : DH
-# @Site :
-# @File : car_control.py
-# @Software: PyCharm
+# @File : server_SingleCar.py
+# @Software : PyCharm
 import time
 import msvcrt
-import math
 import traceback
 import numpy as np
 import socket
 import threading
 import matplotlib.pyplot as plt
+from datetime import datetime
 from location import trilateration
+from car_control import top3_closest_cars, move_forward_target, cmd_test, ControlKeyboard
 from gps_transform import gps_transform
-from models import Car, ControlShow, ControlKeyboard, UWB
+from models import Car, UWB
 
 
 total_car_number = 5
@@ -22,7 +22,7 @@ ip2CarNumber = {
     '192.168.31.99': 1,
     # '169.254.62.154': 2,
     '192.168.2.16': 3,
-    '192.168.43.51': 4,
+    '192.168.43.82': 4,
 }
 ip2UWB = {
     '192.168.43.253': 1,
@@ -89,64 +89,45 @@ def bind_socket():
             break
 
 
-def main(test):
-    # p0 = gps_transform([103.92388, 30.74216])
-    # p1 = gps_transform([103.93755, 30.75348])
-    # 下面这组GPS区域用于楼顶测试
-    p0 = gps_transform([103.92943, 30.75131])
-    p1 = gps_transform([103.93025, 30.75208])
-    area_x = [p0[0], p1[0]]
-    area_y = [p0[1], p1[1]]
-    file = open('2uwb_test.txt', mode='a')
-    fig = plt.figure()
-    while True:
-        try:
-            # 两个uwb时的测试图形
-            if uwb_map[1].distance != 0 and uwb_map[2].distance != 0:
-                theta = np.arange(0, 2 * math.pi, 0.01)
-                center1 = gps_transform(uwb_map[1].position)
-                x1 = uwb_map[1].distance * np.cos(theta) + center1[0]
-                y1 = uwb_map[1].distance * np.sin(theta) + center1[1]
-                center2 = gps_transform(uwb_map[2].position)
-                x2 = uwb_map[2].distance * np.cos(theta) + center2[0]
-                y2 = uwb_map[2].distance * np.sin(theta) + center2[1]
-                plt.plot(x1, y1, '-r', x2, y2, '--b')
-                # plt.xlim(0, 100)
-                # plt.ylim(0, 100)
-                plt.pause(0.2)
-                plt.cla()
-                s = "UWB1的距离：{0}\t\tUWB2的距离：{1}\n".format(uwb_map[1].distance, uwb_map[2].distance)
-                file.write(s)
-                lock.acquire()
-                uwb_map[1].distance, uwb_map[2].distance = 0, 0
-                lock.release()
+def main(control):
+    # target_gps = [103.92759, 30.75447]
+    # target_gps = [103.92763, 30.75450]
+    target_gps = [103.92756, 30.75439]   # 43, 44
+    target_position = gps_transform(target_gps)
+    # file = open('2uwb_test.txt', mode='a')
+    file = open('./car_logs/car_cmd_{0}.txt'.format(datetime.now().strftime('%m_%d')), mode='a')
+    file.write("************* 开始测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+               + " *************" + '\n')
+    car = car_map[4]
+    try:
+        count = 0
+        while True and count < 100:
+            if not control and car.gps is not None:
+                info = move_forward_target(car, target_position)
+                file.write(info + '\n')
+                count += 1
+                time.sleep(0.3)
 
-            # lock.acquire()
-            # if uwb_map[0].distance != 0 and uwb_map[1].distance != 0 and uwb_map[2].distance != 0:
-            #     target_position = trilateration(uwb_map[0].position, uwb_map[1].position, uwb_map[2].position,
-            #                                     uwb_map[0].distance, uwb_map[1].distance, uwb_map[2].distance)
-            # lock.release()
-            if test:
+            if control:
                 keyboard_input = msvcrt.getch().decode('utf-8')
                 if keyboard_input == '\x1b':
                     print("服务器关闭！")
                     break
-            # data = ControlKeyboard(keyboard_input).get_control()
-            # active_cars = [1 if car.connected else 0 for car in car_map.values()]
-            # number = input("发送给第几个小车？目前连接的小车有:\r\n{0}\r\n".format(active_cars))
-            # print("发送给小车 {0}:{1}".format(number, str(data)))
-            # for d in data:
-            #     car_map[int(number)].send(d)
-            #     time.sleep(0.2)
-        except Exception:
-            file.close()
-            traceback.print_exc()
-    file.close()
+                data = ControlKeyboard(keyboard_input).get_control()
+                for d in data:
+                    car.send(d)
+                    time.sleep(0.2)
+    except Exception:
+        traceback.print_exc()
+    finally:
+        print("服务器关闭！")
+        file.write("************* 结束测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                   + " *************" + '\n\n')
+        file.close()
 
 
 if __name__ == '__main__':
-    ControlShow.show_key()
     listen_thread = threading.Thread(target=bind_socket)
     listen_thread.setDaemon(True)
     listen_thread.start()
-    main(test=True)
+    main(control=False)

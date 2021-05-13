@@ -17,6 +17,11 @@ transformer = Transformer.from_crs(crs, crs_cs)
 
 
 def gps_transform(gps):
+    """
+    将GPS坐标转换为直角坐标
+    :param gps: 要转换的gps
+    :return:    以list表示的转换后的直角坐标
+    """
     loc = list(transformer.transform(gps[1], gps[0]))
     loc[0] = round(loc[0], 2)
     loc[1] = round(loc[1], 2)

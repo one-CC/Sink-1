@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
-# @Time : 2020/7/8 21:09
+# -*- coding utf-8 -*-
+# @Time : 2021/1/12 13:47
 # @Author : DH
-# @Site :
-# @File : car_control.py
-# @Software: PyCharm
+# @File : server_pre.py
+# @Software : PyCharm
 import time
 import msvcrt
 import math
@@ -13,8 +12,9 @@ import socket
 import threading
 import matplotlib.pyplot as plt
 from location import trilateration
+from car_control import top3_closest_cars, move_forward_target
 from gps_transform import gps_transform
-from models import Car, ControlShow, ControlKeyboard, UWB
+from models import Car, UWB
 
 
 total_car_number = 5
@@ -35,26 +35,28 @@ for i in range(1, total_car_number + 1):
 uwb_map = {}
 uwb_gps = [[103.92792, 30.75436], [103.92768, 30.75445], [0, 0]]
 for i in range(1, 4):
-    uwb_map[i] = UWB(i, uwb_gps[i - 1])
+    uwb_map[i] = UWB(i, gps_transform(uwb_gps[i - 1]))
 
 lock = threading.Lock()
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-host = '192.168.43.230'
+# host = '192.168.43.230'
 port = 8888
-# host = '127.0.0.1'
+host = '127.0.0.1'
 # port = 6666
 server.bind((host, port))
 server.listen(total_car_number + 3)
 
 
-# 监听小车的连接请求
 def bind_socket():
+    """
+    监听小车的连接请求
+    :return:
+    """
     print("等待连接中...")
     while True:
         try:
             client, addr = server.accept()
             if client:
-                lock.acquire()
                 global car_map, uwb_map
                 if ip2UWB.get(addr[0], None):
                     # 如果是UWBip地址，则需要建立单独的线程来控制uwb；
@@ -65,6 +67,7 @@ def bind_socket():
                         uwb.socket = client
                         uwb.connected = True
                         thread = threading.Thread(target=uwb.receive)
+                        thread.setDaemon(True)
                         thread.start()
                     print("UWB {0} 已连接！".format(uwb_number))
                 elif ip2CarNumber.get(addr[0], None):
@@ -83,7 +86,6 @@ def bind_socket():
                     # print("发送了{0}个比特过去".format(buffersize))
                 else:
                     pass
-                lock.release()
         except:
             print("服务器取消监听了！！！")
             break
@@ -99,33 +101,17 @@ def main(test):
     area_y = [p0[1], p1[1]]
     file = open('2uwb_test.txt', mode='a')
     fig = plt.figure()
-    while True:
-        try:
-            # 两个uwb时的测试图形
-            if uwb_map[1].distance != 0 and uwb_map[2].distance != 0:
-                theta = np.arange(0, 2 * math.pi, 0.01)
-                center1 = gps_transform(uwb_map[1].position)
-                x1 = uwb_map[1].distance * np.cos(theta) + center1[0]
-                y1 = uwb_map[1].distance * np.sin(theta) + center1[1]
-                center2 = gps_transform(uwb_map[2].position)
-                x2 = uwb_map[2].distance * np.cos(theta) + center2[0]
-                y2 = uwb_map[2].distance * np.sin(theta) + center2[1]
-                plt.plot(x1, y1, '-r', x2, y2, '--b')
-                # plt.xlim(0, 100)
-                # plt.ylim(0, 100)
-                plt.pause(0.2)
-                plt.cla()
-                s = "UWB1的距离：{0}\t\tUWB2的距离：{1}\n".format(uwb_map[1].distance, uwb_map[2].distance)
-                file.write(s)
-                lock.acquire()
-                uwb_map[1].distance, uwb_map[2].distance = 0, 0
-                lock.release()
-
-            # lock.acquire()
-            # if uwb_map[0].distance != 0 and uwb_map[1].distance != 0 and uwb_map[2].distance != 0:
-            #     target_position = trilateration(uwb_map[0].position, uwb_map[1].position, uwb_map[2].position,
-            #                                     uwb_map[0].distance, uwb_map[1].distance, uwb_map[2].distance)
-            # lock.release()
+    try:
+        while True:
+            d1 = uwb_map[1].get_distance()
+            d2 = uwb_map[2].get_distance()
+            d3 = uwb_map[3].get_distance()
+            if d1 != 0 and d2 != 0 and d3 != 0:
+                target_position = trilateration(uwb_map[1].position, uwb_map[2].position, uwb_map[3].position,
+                                                d1, d2, d3)
+                selected_cars = top3_closest_cars(target_position, car_map)
+                for car in selected_cars:
+                    move_forward_target(car, target_position)
             if test:
                 keyboard_input = msvcrt.getch().decode('utf-8')
                 if keyboard_input == '\x1b':
@@ -138,15 +124,16 @@ def main(test):
             # for d in data:
             #     car_map[int(number)].send(d)
             #     time.sleep(0.2)
-        except Exception:
-            file.close()
-            traceback.print_exc()
-    file.close()
+    except Exception:
+        traceback.print_exc()
+    finally:
+        print("服务器关闭！")
+        file.close()
 
 
 if __name__ == '__main__':
-    ControlShow.show_key()
     listen_thread = threading.Thread(target=bind_socket)
     listen_thread.setDaemon(True)
     listen_thread.start()
-    main(test=True)
+    main(test=False)
+

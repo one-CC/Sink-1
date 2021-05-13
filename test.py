@@ -4,33 +4,31 @@
 # @File : test.py.py
 # @Software : PyCharm
 import math
-import numpy as np
-import matplotlib.pyplot as plt
+from car_control import calculate_angle
 from gps_transform import gps_transform
 
-fig = plt.figure()
-for _ in range(100000):
-    distance1 = np.random.randint(1, 10)
-    distance2 = np.random.randint(1, 10)
-    theta = np.arange(0, 2 * math.pi, 0.01)
-    center1 = [50, 50]
-    x1 = distance1 * np.cos(theta) + center1[0]
-    y1 = distance1 * np.sin(theta) + center1[1]
-    center2 = [55, 55]
-    x2 = distance2 * np.cos(theta) + center2[0]
-    y2 = distance2 * np.sin(theta) + center2[1]
-    plt.ylim([0, 100])
-    plt.xlim([0, 100])
-    plt.plot(x1, y1, '-r', x2, y2, '--b')
-    # plt.show()
-    plt.pause(0.2)
-    plt.cla()
-# fig, ax = plt.subplots()
-# y1 = []
-# for i in range(50):
-#     y1.append(i)
-#     ax.cla()
-#     ax.bar(y1, label='test', height=y1, width=0.3)
-#     ax.legend()
-#     plt.pause(0.3)
+target_gps = [103.92928882917865, 30.75245796847024]
+car_gps = [103.93066708679817, 30.752462578567716]
+car_angle = [-1.02722, 0.50537, 71.30127]
+
+
+target_position = gps_transform(target_gps)
+car_position = gps_transform(car_gps)
+
+vector = [target_position[0] - car_position[0], target_position[1] - car_position[1]]
+distance = math.sqrt(vector[0] ** 2 + vector[1] ** 2)
+angle = calculate_angle(vector)
+
+projected_car_direction = [math.cos(car_angle[0]), math.cos(car_angle[1])]
+projected_car_angle = calculate_angle(projected_car_direction)
+angle_diff = projected_car_angle - angle
+
+print("target_position: ", target_position)
+print("car_position: ", car_position)
+print("位置向量的角度：", angle)
+print("位置向量的距离：", distance)
+print("朝向向量的角度：", projected_car_angle)
+print("角度差：", angle_diff)
+
+
 

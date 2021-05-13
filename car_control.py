@@ -1,112 +1,11 @@
-# -*- coding: utf-8 -*-
-# @Time : 2020/7/8 21:09
+# -*- coding utf-8 -*-
+# @Time : 2021/1/12 14:47
 # @Author : DH
-# @Site : 
 # @File : car_control.py
-# @Software: PyCharm
-import concurrent.futures as futures
+# @Software : PyCharm
+import math
 import time
-import msvcrt
-import socket
-import threading
-import queue
-total_car_num = 5
-car_list = {}
-temp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-for i in range(1, total_car_num + 1):
-    car_list[i] = temp_socket
-print(car_list)
-active_car_nums = 0
-
-lock = threading.Lock()
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# host = '192.168.31.66'
-# port = 8888
-host = socket.gethostname()
-port = 6666
-server.bind((host, port))
-server.listen(total_car_num)
-
-
-class ControlShow:
-    @staticmethod
-    def show_msg():
-        '''
-        下行控制
-        '''
-        '''
-        小车方向电机控制
-        '''
-        print('小车方向电机控制')
-        print('前：$1,0,0,0,0,0,0,0,0#')
-        print('后：$2,0,0,0,0,0,0,0,0#')
-        print('左：$3,0,0,0,0,0,0,0,0#')
-        print('右：$4,0,0,0,0,0,0,0,0#')
-        print('左转：$0,1,0,0,0,0,0,0,0#')
-        print('右转：$0,2,0,0,0,0,0,0,0#')
-        print('停：$0,0,0,0,0,0,0,0,0#')
-        '''
-        摄像头电机方向控制
-        '''
-        print('摄像头电机方向控制')
-        print('前：$0,0,0,0,3,0,0,0,0#')
-        print('后：$0,0,0,0,4,0,0,0,0#')
-        print('左：$0,0,0,0,6,0,0,0,0#')
-        print('右：$0,0,0,0,7,0,0,0,0#')
-        print('停：$0,0,0,0,8,0,0,0,0#')
-        '''
-        超声波电机控制
-        '''
-        print('超声波电机控制')
-        print('左：$0,0,0,0,1,0,0,0,0#')
-        print('中：$0,0,0,0,0,0,0,0,1#')
-        print('右：$0,0,0,0,2,0,0,0,0#')
-        '''
-        灯控制
-        '''
-        print('灯控制')
-        print('开：$0,0,0,0,0,0,1,0,0#')
-        print('关：$0,0,0,0,0,0,8,0,0#')
-        print('红：$0,0,0,0,0,0,2,0,0#')
-        print('绿：$0,0,0,0,0,0,3,0,0#')
-        print('蓝：$0,0,0,0,0,0,4,0,0#')
-
-        '''
-        其他功能
-        '''
-        print('其他功能')
-        print('灭火：$0,0,0,0,0,0,0,1,0#')
-        print('鸣笛：$0,0,1,0,0,0,0,0,0#')
-        print('加速：$0,0,0,1,0,0,0,0,0#')
-        print('减速：$0,0,0,2,0,0,0,0,0#')
-
-        '''
-        转动角度控制
-        '''
-        # print("舵机转动到180度：$4WD,PTZ180#")
-
-        '''
-        上行显示
-        '''
-        '''
-        小车超声波传感器采集的信息发给上位机显示
-        打包格式如:
-            超声波 电压  灰度  巡线  红外避障 寻光
-        $4WD,CSB120,PV8.3,GS214,LF1011,HW11,GM11#
-        '''
-
-    @staticmethod
-    def show_key():
-        print('小车方向控制')
-        print('前：w，后：x，左：a，右：d，左转：z，右转：c，停：s')
-        print('摄像头方向控制')
-        print('上：i，下：m，左：j，右：l，停：k')
-        print('超声波方向控制')
-        print('左：r，中：t，右：y')
-        print('灯开关控制')
-        print('开：v，关：b')
-        print('其他功能')
-        print('鸣笛：f，灭火：g')
+from datetime import datetime
 
 
 class ControlKeyboard:
@@ -180,77 +79,178 @@ class ControlKeyboard:
         return msg
 
 
-# 把每个小车作为一个线程单独接收。
-def receive(socket_exp, car_number):
-    try:
-        while True:
-            data = socket_exp.recv(1024)
-            if not data:
-                break
-            print("Receive from car {0}：{1}".format(car_number, data.decode('utf-8')))
-    except ConnectionResetError as CR:
-        pass
-    finally:
-        lock.acquire()
-        print("第{}个tcp连接已断开！".format(car_number))
-        global active_car_nums, temp_socket
-        active_car_nums -= 1
-        car_list[car_number] = temp_socket
-        print("当前活跃的线程数：" + str(active_car_nums))
-        lock.release()
+def get_control(cmd):
+    """
+    根据cmd，返回相应的指令
+    :param cmd:     要完成的动作
+    :return:    控制小车的指令
+    """
+    msg = []
+    # 小车方向
+    if cmd == 'w':  # 前
+        msg.append('$1,0,0,0,0,0,0,0,0#')
+        msg.append('$0,0,0,0,0,0,0,0,0#')
+    elif cmd == 'x':  # 后
+        msg.append('$2,0,0,0,0,0,0,0,0#')
+        msg.append('$0,0,0,0,0,0,0,0,0#')
+    elif cmd == 'a':  # 左
+        msg.append('$3,0,0,0,0,0,0,0,0#')
+        msg.append('$0,0,0,0,0,0,0,0,0#')
+    elif cmd == 'd':  # 右
+        msg.append('$4,0,0,0,0,0,0,0,0#')
+        msg.append('$0,0,0,0,0,0,0,0,0#')
+    elif cmd == 'z':  # 左转
+        msg.append('$0,1,0,0,0,0,0,0,0#')
+        msg.append('$0,0,0,0,0,0,0,0,0#')
+    elif cmd == 'c':  # 右转
+        msg.append('$0,2,0,0,0,0,0,0,0#')
+        msg.append('$0,0,0,0,0,0,0,0,0#')
+    elif cmd == 's':  # 停
+        msg.append('$0,0,0,0,0,0,0,0,0#')
+
+    # 灯开关控制
+    elif cmd == 'v':  # 开
+        msg.append('$0,0,0,0,0,0,1,0,0#')
+    elif cmd == 'b':  # 关
+        msg.append('$0,0,0,0,0,0,8,0,0#')
+
+        # 摄像头方向
+    elif cmd == 'i':  # 上
+        msg.append('$0,0,0,0,3,0,0,0,0#')
+        # msg.append('$0,0,0,0,8,0,0,0,0#')
+    elif cmd == 'm':  # 下
+        msg.append('$0,0,0,0,4,0,0,0,0#')
+        # msg.append('$0,0,0,0,8,0,0,0,0#')
+    elif cmd == 'j':  # 左
+        msg.append('$0,0,0,0,6,0,0,0,0#')
+        # msg.append('$0,0,0,0,8,0,0,0,0#')
+    elif cmd == 'l':  # 右
+        msg.append('$0,0,0,0,7,0,0,0,0#')
+        # msg.append('$0,0,0,0,8,0,0,0,0#')
+    elif cmd == 'k':  # 停
+        msg.append('$0,0,0,0,8,0,0,0,0#')
+
+    # 超声波控制
+    elif cmd == 'r':  # 左
+        msg.append('$0,0,0,0,1,0,0,0,0#')
+    elif cmd == 't':  # 中
+        msg.append('$0,0,0,0,0,0,0,0,1#')
+    elif cmd == 'y':  # 右
+        msg.append('$0,0,0,0,2,0,0,0,0#')
+
+    # 其他功能
+    elif cmd == 'f':  # 鸣笛
+        msg.append('$0,0,1,0,0,0,0,0,0#')
+    elif cmd == 'g':  # 灭火
+        msg.append('$0,0,0,0,0,0,0,1,0#')
+
+    return msg
 
 
-# 多线程监听小车的连接请求
-def bind_socket():
-    print("等待连接中...")
-    while True:
-        try:
-            client, addr = server.accept()
-            if client:
-                lock.acquire()
-                global active_car_nums, temp_socket
-                active_car_nums += 1
-                car_number = 0
-                for car_number in car_list.keys():
-                    if car_list[car_number] == temp_socket:
-                        print(car_number)
-                        car_list[car_number] = client
-                        break
-                thread = threading.Thread(target=receive, args=(client, car_number))
-                thread.start()
-                print("第{0}个访问者来啦！它是'{1}'".format(car_number, str(addr[0])))
-                lock.release()
-                send_msg = "欢迎访问浩gg，" + str(addr[0]) + '！'
-                buffersize = client.send(send_msg.encode('utf-8'))
-                print("发送了{0}个比特过去".format(buffersize))
-                print("当前活跃的线程：" + str(active_car_nums))
-        except:
-            print("服务器关闭连接了！！！")
-            break
+def calculate_angle(vector):
+    """
+    计算一个向量与平面x轴的夹角
+    :param vector: 向量
+    :return: 与x轴的夹角，范围[0, 360]
+    """
+    dist = math.sqrt(vector[0] ** 2 + vector[1] ** 2)
+    angle = math.degrees(math.acos(vector[0] / dist))
+    angle = angle if vector[1] > 0 else 360 - angle
+    return round(angle, 2)
 
 
-def main():
-    while True:
-        try:
-            keyboard_input = msvcrt.getch().decode('utf-8')
-            if keyboard_input == "\x1b":
-                print("服务器关闭！")
-                break
-            data = ControlKeyboard(keyboard_input).get_control()
-            number = input("发送给第几个小车？目前小车列表为:\r\n{0}\r\n".format(car_list))
-            print("Send data to car {0}:{1}".format(number, str(data)))
-            for d in data:
-                car_list[int(number)].send(d.encode('utf-8'))
-                time.sleep(0.2)
-        finally:
-            pass
+def move_forward_target(car, target_position):
+    """
+    根据小车与目标的位置，进行移动
+    :param car:
+    :param target_position:
+    :return:
+    """
+    vector = [target_position[0] - car.position[0], target_position[1] - car.position[1]]
+    distance = math.sqrt(vector[0] ** 2 + vector[1] ** 2)
+    if distance <= 2:
+        # 距离小于两米，则不移动
+        msgs = get_control("s")
+        info = "Action：原地不动"
+        print("原地不动")
+        for msg in msgs:
+            car.send(msg)
+            time.sleep(0.2)
+        time_string = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        return "{0}：{1}".format(time_string, info)
+    angle = calculate_angle(vector)
+
+    # 将小车的三维角度投影到平面坐标中
+    projected_car_angle = car.angle[2] if car.angle[2] >= 0 else 360 + car.angle[2]
+
+    # 根据小车的朝向与目标向量的夹角，分情况：
+    angle_diff = projected_car_angle - angle
+    print("当前角度：", angle_diff)
+    if math.fabs(angle_diff) <= 30 or math.fabs(angle_diff) >= 330:
+        # 小夹角情况下，直接 向前走
+        print("直接向前走")
+        info = "Action：直接向前走"
+        msgs = get_control("w")
+    elif 30 < angle_diff <= 90 or -330 <= angle_diff < -270:
+        # 右转
+        print("右转")
+        info = "Action：右转"
+        msgs = get_control("d")
+    elif -90 <= angle_diff < -30 or 270 <= angle_diff < 330:
+        # 左转
+        print("左转")
+        info = "Action：左转"
+        msgs = get_control("a")
+    elif 90 < angle_diff <= 180 or -270 <= angle_diff < -180:
+        # 原地右转
+        print("原地右转")
+        info = "Action：原地右转"
+        msgs = get_control("c")
+    elif -180 <= angle_diff < -90 or 180 < angle_diff < 270:
+        # 原地左转
+        print("原地左转")
+        info = "Action：原地左转"
+        msgs = get_control("z")
+    for msg in msgs:
+        car.send(msg)
+        time.sleep(0.2)
+    time_string = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+    return "{0}：位置向量的角度：{1}\t小车朝向角度：{2}\t{3}".format(time_string, angle, projected_car_angle, info)
 
 
-if __name__ == '__main__':
-    # ControlShow.show_msg()
-    ControlShow.show_key()
-    listen_thread = threading.Thread(target=bind_socket)
-    listen_thread.setDaemon(True)
-    listen_thread.start()
-    main()
+def top3_closest_cars(target_position, car_map):
+    """
+    计算当前时刻距离目标最近的三个小车
+    :param car_map:     小车字典
+    :param target_position:     目标此刻的定位坐标
+    :return:    被选择的三个小车
+    """
+    selected_car = []
+    distance_map = dict()
+    for num, car in car_map.items():
+        distance = math.sqrt((car.position[0] - target_position[0]) ** 2 + (car.position[1] - target_position[1]) ** 2)
+        distance_map[distance] = car
+    sorted_dis = sorted(distance_map)
+    selected_car.append(distance_map[sorted_dis[0]])
+    selected_car.append(distance_map[sorted_dis[1]])
+    selected_car.append(distance_map[sorted_dis[2]])
+
+    return selected_car
+
+
+def cmd_test(car, i):
+    if i == 0:
+        msgs = get_control("w")   # v, w, g , rty
+    elif i == 1:
+        msgs = get_control("t")
+    elif i == 2:
+        msgs = get_control("y")
+
+    for msg in msgs:
+        car.send(msg)
+        time.sleep(0.2)
+    info = "Action：左转"
+    time_string = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+    return "{0}：{1}".format(time_string, info)
+
 

@@ -5,8 +5,7 @@
 # @File : car_main.py
 # @Software: PyCharm
 import threading
-import car_video
-from Unuse import AP_as_client
+from Unuse import AP_as_client, car_video
 
 
 def watch_video():
