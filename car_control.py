@@ -5,7 +5,9 @@
 # @Software : PyCharm
 import math
 import time
+import random
 from datetime import datetime
+from gps_transform import gps_transform
 
 
 class ControlKeyboard:
@@ -83,7 +85,7 @@ def get_control(cmd):
     """
     根据cmd，返回相应的指令
     :param cmd:     要完成的动作
-    :return:    控制小车的指令
+    :return:    控制小车的指令列表
     """
     msg = []
     # 小车方向
@@ -162,9 +164,9 @@ def calculate_angle(vector):
 def move_forward_target(car, target_position):
     """
     根据小车与目标的位置，进行移动
-    :param car:
-    :param target_position:
-    :return:
+    :param car: 移动的小车
+    :param target_position: 目标的平面坐标
+    :return: 日志记录字符串
     """
     vector = [target_position[0] - car.position[0], target_position[1] - car.position[1]]
     distance = math.sqrt(vector[0] ** 2 + vector[1] ** 2)
@@ -222,7 +224,7 @@ def top3_closest_cars(target_position, car_map):
     """
     计算当前时刻距离目标最近的三个小车
     :param car_map:     小车字典
-    :param target_position:     目标此刻的定位坐标
+    :param target_position:     目标的平面坐标
     :return:    被选择的三个小车
     """
     selected_car = []
@@ -238,19 +240,60 @@ def top3_closest_cars(target_position, car_map):
     return selected_car
 
 
-def cmd_test(car, i):
-    if i == 0:
-        msgs = get_control("w")   # v, w, g , rty
-    elif i == 1:
-        msgs = get_control("t")
-    elif i == 2:
-        msgs = get_control("y")
+def generate_trajectory(start_gps):
+    """
+    根据一个起始GPS位置，产生一段轨迹。主要用于目标轨迹生成
+    :param start_gps: 起始GPS
+    :return: 一段运动轨迹的平面坐标列表
+    """
+    temp = gps_transform(start_gps)
+    res = [temp]
+    for _ in range(20):
+        temp = [temp[0] + 0.2, temp[1]]
+        res.append(temp)
+    # for _ in range(10):
+    #     temp = [temp[0], temp[1] + 0.3]
+    #     res.append(temp)
+    #     res.append(temp)
+    #     res.append(temp)
+    #     res.append(temp)
+    #     res.append(temp)
+    return res
 
+
+def target_move(target, randomly):
+    """
+    控制目标移动
+    :param target: 目标小车
+    :param randomly: 是否随机移动
+    :return:
+    """
+    if randomly:
+        # 方法一：随机轨迹
+        msgs = randomly_move()
+    else:
+        # 方法二：自定义轨迹
+        msgs = defined_move()
     for msg in msgs:
-        car.send(msg)
+        target.send(msg)
         time.sleep(0.2)
-    info = "Action：左转"
-    time_string = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-    return "{0}：{1}".format(time_string, info)
 
 
+def randomly_move():
+    # 随机轨迹，概率：1/3 1/4 1/4 1/12 1/12
+    control = ['w', 'w', 'w', 'w', 'd', 'd', 'd', 'a', 'a', 'a', 'z', 'c']
+    cmd_index = random.randint(0, 11)
+    cmd = control[cmd_index]
+    return get_control(cmd)
+
+
+# 自定义轨迹
+defined_control = ['w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w','z', 'a',
+                   'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'z', 'a',
+                   'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w']
+def defined_move():
+    if len(defined_control) > 0:
+        cmd = defined_control.pop()
+    else:
+        cmd = 's'
+    return get_control(cmd)

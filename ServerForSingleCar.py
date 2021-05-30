@@ -1,7 +1,7 @@
 # -*- coding utf-8 -*-
 # @Time : 2021/3/16 15:56
 # @Author : DH
-# @File : server_SingleCar.py
+# @File : ServerForSingleCar.py
 # @Software : PyCharm
 import time
 import msvcrt
@@ -12,7 +12,7 @@ import threading
 import matplotlib.pyplot as plt
 from datetime import datetime
 from location import trilateration
-from car_control import top3_closest_cars, move_forward_target, cmd_test, ControlKeyboard
+from car_control import *
 from gps_transform import gps_transform
 from models import Car, UWB
 
@@ -23,6 +23,7 @@ ip2CarNumber = {
     # '169.254.62.154': 2,
     '192.168.2.16': 3,
     '192.168.43.82': 4,
+    '192.168.43.242': 5,
 }
 ip2UWB = {
     '192.168.43.253': 1,
@@ -90,23 +91,27 @@ def bind_socket():
 
 
 def main(control):
-    # target_gps = [103.92759, 30.75447]
-    # target_gps = [103.92763, 30.75450]
-    target_gps = [103.92756, 30.75439]   # 43, 44
+    # 单小车追踪，目标为虚拟轨迹或虚拟点
+    target_gps = [103.92756, 30.75439]
     target_position = gps_transform(target_gps)
-    # file = open('2uwb_test.txt', mode='a')
+    trajectory = generate_trajectory(target_gps)
     file = open('./car_logs/car_cmd_{0}.txt'.format(datetime.now().strftime('%m_%d')), mode='a')
     file.write("************* 开始测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
                + " *************" + '\n')
     car = car_map[4]
     try:
         count = 0
+        i = 0
+        current_position = trajectory[i]
         while True and count < 100:
             if not control and car.gps is not None:
+                if i < len(trajectory):
+                    current_position = trajectory[i]
+                    i += 1
                 info = move_forward_target(car, target_position)
                 file.write(info + '\n')
                 count += 1
-                time.sleep(0.3)
+                time.sleep(0.1)
 
             if control:
                 keyboard_input = msvcrt.getch().decode('utf-8')
@@ -130,4 +135,4 @@ if __name__ == '__main__':
     listen_thread = threading.Thread(target=bind_socket)
     listen_thread.setDaemon(True)
     listen_thread.start()
-    main(control=False)
+    main(control=True)
