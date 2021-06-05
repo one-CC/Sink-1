@@ -1,8 +1,9 @@
 # -*- coding utf-8 -*-
-# @Time : 2021/3/16 15:56
+# @Time : 2021/5/29 17:15
 # @Author : DH
-# @File : ServerForSingleCar.py
+# @File : server_for_single_car2.py
 # @Software : PyCharm
+# @Desc : 用于测试三个uwb的三角定位，不涉及小车控制
 import time
 import msvcrt
 import traceback
@@ -13,7 +14,8 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from location import trilateration
 from car_control import *
-from gps_transform import gps_transform
+from uwb_utils import *
+from gps_transform import *
 from models import Car, UWB
 
 
@@ -25,15 +27,19 @@ ip2CarNumber = {
     '192.168.43.82': 4,
     '192.168.43.242': 5,
 }
+
 ip2UWB = {
     '192.168.43.253': 1,
     '192.168.43.141': 2,
     '127.0.0.1': 3,
 }
+
 car_map = {}
 for i in range(1, total_car_number + 1):
     car_map[i] = Car(i)
+
 uwb_map = {}
+# 每次测试需要手动填入三个 uwb 的 gps 信息
 uwb_gps = [[103.92792, 30.75436], [103.92768, 30.75445], [0, 0]]
 for i in range(1, 4):
     uwb_map[i] = UWB(i, uwb_gps[i - 1])
@@ -48,7 +54,7 @@ server.bind((host, port))
 server.listen(total_car_number + 3)
 
 
-# 监听小车的连接请求
+# 监听小车和uwb的连接请求
 def bind_socket():
     print("等待连接中...")
     while True:
@@ -91,37 +97,25 @@ def bind_socket():
 
 
 def main(control):
-    # 单小车追踪，目标为虚拟轨迹或虚拟点
-    target_gps = [103.92756, 30.75439]
-    target_position = gps_transform(target_gps)
-    trajectory = generate_trajectory(target_gps)
     file = open('./car_logs/car_cmd_{0}.txt'.format(datetime.now().strftime('%m_%d')), mode='a')
     file.write("************* 开始测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
                + " *************" + '\n')
-    car = car_map[4]
+    # 首先需要等待三个 uwb 都连接上
+    while not is_all_uwbs_connected(uwb_map):
+        pass
     try:
         count = 0
-        i = 0
-        current_position = trajectory[i]
-        while True and count < 100:
-            if not control and car.gps is not None:
-                if i < len(trajectory):
-                    current_position = trajectory[i]
-                    i += 1
-                info = move_forward_target(car, target_position)
-                file.write(info + '\n')
-                count += 1
-                time.sleep(0.1)
-
-            if control:
-                keyboard_input = msvcrt.getch().decode('utf-8')
-                if keyboard_input == '\x1b':
-                    print("服务器关闭！")
-                    break
-                data = ControlKeyboard(keyboard_input).get_control()
-                for d in data:
-                    car.send(d)
-                    time.sleep(0.2)
+        while count < 1000:
+            d1 = uwb_map[1].get_distance()
+            d2 = uwb_map[2].get_distance()
+            d3 = uwb_map[3].get_distance()
+            if d1 != 0 and d2 != 0 and d3 != 0:
+                target_position = trilateration(uwb_map[1].position, uwb_map[2].position, uwb_map[3].position,
+                                                d1, d2, d3)
+                target_gps = position_transform(target_position)
+                print(target_gps)
+                # count += 1
+                # time.sleep(0.1)
     except Exception:
         traceback.print_exc()
     finally:
@@ -136,3 +130,6 @@ if __name__ == '__main__':
     listen_thread.setDaemon(True)
     listen_thread.start()
     main(control=True)
+
+
+

@@ -5,6 +5,7 @@
 # @File : location.py
 # @Software: PyCharm
 import numpy as np
+import time
 import matplotlib.pyplot as plt
 
 
@@ -17,7 +18,7 @@ def trilateration(p1, p2, p3, d1, d2, d3):
     :param d1:  第一个点测得的距离
     :param d2:  第二个点测得的距离
     :param d3:  第三个点测得的距离
-    :return:    以numpy数组表示的定位点的坐标
+    :return:    以numpy数组表示的定位点的坐标 [x,y]
     """
     X = np.asarray([[p3[0] - p1[0], p3[1] - p1[1]], [p3[0] - p2[0], p3[1] - p2[1]]])
     Y = np.asarray([0.5 * (d1**2 - d3**2 + p3[0]**2 + p3[1]**2 - p1[0]**2 - p1[1]**2),
@@ -34,6 +35,7 @@ if __name__ == '__main__':
     p3 = [5, 20]
     d3 = 20
     pos = trilateration(p1, p2, p3, d1, d2, d3)
+    print(pos)
     # 可视化节点位置及其传感范围
     fig1 = plt.figure('fig1')
     x = [p1[0], p2[0], p3[0]]
@@ -54,4 +56,5 @@ if __name__ == '__main__':
     plt.scatter(pos[0], pos[1])
     plt.grid()
     fig1.show()
+    time.sleep(1)
 

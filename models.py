@@ -225,23 +225,27 @@ class Car:
 
 
 class UWB:
-    def __init__(self, uwb_number, position):
+    def __init__(self, uwb_number, gps):
         self.distance = 0
         self.uwb_number = uwb_number
-        self.position = position
+        self.gps = gps
+        self.position = gps_transform(gps)
         self.connected = False
         self.socket = None
 
     def receive(self):
-        file = open('./uwb_logs/uwb_{0}.txt'.format(self.uwb_number), mode='a')
+        file = open('./uwb_logs/uwb_{0}_{1}.txt'.format(self.uwb_number, datetime.now().strftime('%m_%d')), mode='a')
+        file.write("************* 开始测试，时间：" +
+                   datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + " *************" + '\n')
         try:
             while True:
-                data = self.socket.recv(1024)
-                if not data:
+                data = self.socket.recv(10240)
+                if len(data) == 0:
                     break
-                print("收到来自UWB {0} 的消息：{1}".format(self.uwb_number, data.decode('utf-8')))
+                # print("收到来自UWB {0} 的消息：{1}".format(self.uwb_number, data.decode('utf-8')))
                 time_string = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
                 file.write("{0} 来自UWB {1} ：{2}\n".format(time_string, self.uwb_number, data.decode('utf-8')))
+
                 # UBW的每个包只包含一个distance，包之间用一个#分隔
                 messages = (data.decode('utf-8')).split('#')
                 self.distance = float(messages[-2])  # 最后一个是空字符串
@@ -251,15 +255,17 @@ class UWB:
             traceback.print_exc()
             print("UWB {0} 的tcp连接出问题了！".format(self.uwb_number))
         finally:
+            self.distance = 0
             file.close()
             self.connected = False
             print("UWB {0} 的tcp连接已断开！".format(self.uwb_number))
 
-    def send(self, cmd):
-        # cmd = 'start','stop',...
-        self.socket.send(cmd.encode('utf-8'))
+    def send(self, message):
+        # uwb 可能用不到
+        self.socket.send(message.encode('utf-8'))
 
     def get_distance(self):
-        res, self.distance = self.distance, 0
+        # res, self.distance = self.distance, 0
+        res = self.distance
         return res
 

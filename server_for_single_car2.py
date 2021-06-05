@@ -1,8 +1,9 @@
 # -*- coding utf-8 -*-
 # @Time : 2021/5/29 17:15
 # @Author : DH
-# @File : ServerForSingleCar2.py
+# @File : server_for_single_car2.py
 # @Software : PyCharm
+# @Desc : 用于单个小车去追踪另外一个目标小车
 import time
 import msvcrt
 import traceback
