@@ -1,1 +1,3 @@
-/unused_files/
+/unused_files/*
+/car_logs/*
+/uwb_logs/*
