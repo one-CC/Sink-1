@@ -1,3 +1,5 @@
 /unused_files/*
 /car_logs/*
 /uwb_logs/*
+/.idea
+/__pycache__
