@@ -4,7 +4,6 @@
 # @Site : 
 # @File : gps_transform.py
 # @Software: PyCharm
-import math
 from pyproj import CRS, Transformer
 # 48:102E~108E;   49:108E~114E
 # 每个经度投影带，中央经度为500 000米，东加西减；

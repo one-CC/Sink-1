@@ -4,109 +4,50 @@
 # @File : car_control.py
 # @Software : PyCharm
 import math
-import time
-import random
 from datetime import datetime
-from gps_transform import gps_transform
+from models import Car
 
 
-class ControlKeyboard:
-    def __init__(self, keyboard_input):
-        self.KEYBOARD_INPUT = keyboard_input
-
-    def get_control(self):
-        """
-
-        :return:
-        """
-        msg = []
-        # 小车方向
-        if self.KEYBOARD_INPUT == 'w':  # 前
-            msg.append('$1,0,0,0,0,0,0,0,0#')
-            msg.append('$0,0,0,0,0,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'x':  # 后
-            msg.append('$2,0,0,0,0,0,0,0,0#')
-            msg.append('$0,0,0,0,0,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'a':  # 左
-            msg.append('$3,0,0,0,0,0,0,0,0#')
-            msg.append('$0,0,0,0,0,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'd':  # 右
-            msg.append('$4,0,0,0,0,0,0,0,0#')
-            msg.append('$0,0,0,0,0,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'z':  # 左转
-            msg.append('$0,1,0,0,0,0,0,0,0#')
-            msg.append('$0,0,0,0,0,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'c':  # 右转
-            msg.append('$0,2,0,0,0,0,0,0,0#')
-            msg.append('$0,0,0,0,0,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 's':  # 停
-            msg.append('$0,0,0,0,0,0,0,0,0#')
-
-        # 摄像头方向
-        elif self.KEYBOARD_INPUT == 'i':  # 上
-            msg.append('$0,0,0,0,3,0,0,0,0#')
-            # msg.append('$0,0,0,0,8,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'm':  # 下
-            msg.append('$0,0,0,0,4,0,0,0,0#')
-            # msg.append('$0,0,0,0,8,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'j':  # 左
-            msg.append('$0,0,0,0,6,0,0,0,0#')
-            # msg.append('$0,0,0,0,8,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'l':  # 右
-            msg.append('$0,0,0,0,7,0,0,0,0#')
-            # msg.append('$0,0,0,0,8,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'k':  # 停
-            msg.append('$0,0,0,0,8,0,0,0,0#')
-
-        # 超声波控制
-        elif self.KEYBOARD_INPUT == 'r':  # 左
-            msg.append('$0,0,0,0,1,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 't':  # 中
-            msg.append('$0,0,0,0,0,0,0,0,1#')
-        elif self.KEYBOARD_INPUT == 'y':  # 右
-            msg.append('$0,0,0,0,2,0,0,0,0#')
-
-        # 灯开关控制
-        elif self.KEYBOARD_INPUT == 'v':  # 开
-            msg.append('$0,0,0,0,0,0,1,0,0#')
-        elif self.KEYBOARD_INPUT == 'b':  # 关
-            msg.append('$0,0,0,0,0,0,8,0,0#')
-
-        # 其他功能
-        elif self.KEYBOARD_INPUT == 'f':  # 鸣笛
-            msg.append('$0,0,1,0,0,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'g':  # 灭火
-            msg.append('$0,0,0,0,0,0,0,1,0#')
-
-        return msg
-
-
-def get_control(cmd):
+def get_control(cmd: str):
     """
     根据cmd，返回相应的指令
     :param cmd:     要完成的动作
-    :return:    控制小车的指令列表
+    :return:    控制小车的指令列表, 能耗
     """
-    msg = []
+    msg, energy_consumption = [], 0
     # 小车方向
     if cmd == 'w':  # 前
         msg.append('$1,0,0,0,0,0,0,0,0#')
         msg.append('$0,0,0,0,0,0,0,0,0#')
+        energy_consumption = 0.4
+    elif cmd == 'quick':  # 快速前
+        msg.append('$5,0,0,0,0,0,0,0,0#')
+        msg.append('$0,0,0,0,0,0,0,0,0#')
+        energy_consumption = 0.6
+    elif cmd == 'slow':  # 慢速前
+        msg.append('$6,0,0,0,0,0,0,0,0#')
+        msg.append('$0,0,0,0,0,0,0,0,0#')
+        energy_consumption = 0.2
     elif cmd == 'x':  # 后
         msg.append('$2,0,0,0,0,0,0,0,0#')
         msg.append('$0,0,0,0,0,0,0,0,0#')
+        energy_consumption = 0.4
     elif cmd == 'a':  # 左
         msg.append('$3,0,0,0,0,0,0,0,0#')
         msg.append('$0,0,0,0,0,0,0,0,0#')
+        energy_consumption = 0.2
     elif cmd == 'd':  # 右
         msg.append('$4,0,0,0,0,0,0,0,0#')
         msg.append('$0,0,0,0,0,0,0,0,0#')
+        energy_consumption = 0.2
     elif cmd == 'z':  # 左转
         msg.append('$0,1,0,0,0,0,0,0,0#')
         msg.append('$0,0,0,0,0,0,0,0,0#')
+        energy_consumption = 0.2
     elif cmd == 'c':  # 右转
         msg.append('$0,2,0,0,0,0,0,0,0#')
         msg.append('$0,0,0,0,0,0,0,0,0#')
+        energy_consumption = 0.2
     elif cmd == 's':  # 停
         msg.append('$0,0,0,0,0,0,0,0,0#')
 
@@ -146,10 +87,10 @@ def get_control(cmd):
     elif cmd == 'g':  # 灭火
         msg.append('$0,0,0,0,0,0,0,1,0#')
 
-    return msg
+    return msg, energy_consumption
 
 
-def calculate_angle(vector):
+def calculate_angle(vector: list):
     """
     计算一个向量与平面x轴的夹角
     :param vector: 向量
@@ -161,24 +102,33 @@ def calculate_angle(vector):
     return round(angle, 2)
 
 
-def move_forward_target(car, target_position):
+def calculate_distance(s: list, t: list):
+    """
+    计算两点之间的距离，保留两位小数
+    :param s:
+    :param t:
+    :return:
+    """
+    return round(math.sqrt((s[0] - t[0]) ** 2 + (s[1] - t[1]) ** 2), 2)
+
+
+def move_forward_target(car: Car, target_position: list, variable_speed=False) -> str:
     """
     根据小车与目标的位置，进行移动
+    :param variable_speed: 是否开启变速，默认不开启
     :param car: 移动的小车
     :param target_position: 目标的平面坐标
     :return: 日志记录字符串
     """
     vector = [target_position[0] - car.position[0], target_position[1] - car.position[1]]
-    distance = math.sqrt(vector[0] ** 2 + vector[1] ** 2)
-    if distance <= 2:
-        # 距离小于两米，则不移动
-        msgs = get_control("s")
+    distance = calculate_distance(vector, [0, 0])
+    msgs, energy_consumption = None, 0
+    if distance <= 3:
+        # 距离小于四米，则不移动
+        msgs, energy_consumption = get_control("s")
         info = "Action：原地不动"
-        print("原地不动")
-        for msg in msgs:
-            car.send(msg)
-            time.sleep(0.2)
-        time_string = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        car.send(msgs, energy_consumption)
+        time_string = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + " 小车" + str(car.car_number)
         return "{0}：{1}".format(time_string, info)
     angle = calculate_angle(vector)
 
@@ -187,40 +137,38 @@ def move_forward_target(car, target_position):
 
     # 根据小车的朝向与目标向量的夹角，分情况：
     angle_diff = projected_car_angle - angle
-    print("当前角度：", angle_diff)
+    # print("当前角度：", angle_diff)
     if math.fabs(angle_diff) <= 30 or math.fabs(angle_diff) >= 330:
-        # 小夹角情况下，直接 向前走
-        print("直接向前走")
+        # 小夹角情况下，直接向前走
         info = "Action：直接向前走"
-        msgs = get_control("w")
+        if variable_speed and distance > 6:
+            msgs, energy_consumption = get_control('quick')
+        elif variable_speed and distance > 3:
+            msgs, energy_consumption = get_control('w')
+        else:
+            msgs, energy_consumption = get_control("w")
     elif 30 < angle_diff <= 90 or -330 <= angle_diff < -270:
         # 右转
-        print("右转")
         info = "Action：右转"
-        msgs = get_control("d")
+        msgs, energy_consumption = get_control("d")
     elif -90 <= angle_diff < -30 or 270 <= angle_diff < 330:
         # 左转
-        print("左转")
         info = "Action：左转"
-        msgs = get_control("a")
+        msgs, energy_consumption = get_control("a")
     elif 90 < angle_diff <= 180 or -270 <= angle_diff < -180:
         # 原地右转
-        print("原地右转")
         info = "Action：原地右转"
-        msgs = get_control("c")
+        msgs, energy_consumption = get_control("c")
     elif -180 <= angle_diff < -90 or 180 < angle_diff < 270:
         # 原地左转
-        print("原地左转")
         info = "Action：原地左转"
-        msgs = get_control("z")
-    for msg in msgs:
-        car.send(msg)
-        time.sleep(0.2)
-    time_string = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        msgs, energy_consumption = get_control("z")
+    car.send(msgs, energy_consumption)
+    time_string = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + " 小车" + str(car.car_number)
     return "{0}：位置向量的角度：{1}\t小车朝向角度：{2}\t{3}".format(time_string, angle, projected_car_angle, info)
 
 
-def top3_closest_cars(target_position, car_map):
+def top3_closest_cars(target_position: list, car_map: dict):
     """
     计算当前时刻距离目标最近的三个小车
     :param car_map:     小车字典
@@ -228,72 +176,20 @@ def top3_closest_cars(target_position, car_map):
     :return:    被选择的三个小车
     """
     selected_car = []
-    distance_map = dict()
+    score_map = dict()
+    max_distance = 1
+    for car in car_map.values():
+        max_distance = max(max_distance, calculate_distance(car.position, target_position))
     for num, car in car_map.items():
-        distance = math.sqrt((car.position[0] - target_position[0]) ** 2 + (car.position[1] - target_position[1]) ** 2)
-        distance_map[distance] = car
-    sorted_dis = sorted(distance_map)
-    selected_car.append(distance_map[sorted_dis[0]])
-    selected_car.append(distance_map[sorted_dis[1]])
-    selected_car.append(distance_map[sorted_dis[2]])
-
+        distance = calculate_distance(car.position, target_position)
+        # 计算得分, 偏重于距离
+        score = 0 if car.battery < 5 else 200 * (1 - distance / max_distance) + car.battery
+        if score > 0:
+            score_map[score] = car
+    rank_map = sorted(score_map)
+    selected_car.append(score_map[rank_map[0]])
+    selected_car.append(score_map[rank_map[1]])
+    selected_car.append(score_map[rank_map[2]])
     return selected_car
 
 
-def generate_trajectory(start_gps):
-    """
-    根据一个起始GPS位置，产生一段轨迹。主要用于目标轨迹生成
-    :param start_gps: 起始GPS
-    :return: 一段运动轨迹的平面坐标列表
-    """
-    temp = gps_transform(start_gps)
-    res = [temp]
-    for _ in range(20):
-        temp = [temp[0] + 0.2, temp[1]]
-        res.append(temp)
-    # for _ in range(10):
-    #     temp = [temp[0], temp[1] + 0.3]
-    #     res.append(temp)
-    #     res.append(temp)
-    #     res.append(temp)
-    #     res.append(temp)
-    #     res.append(temp)
-    return res
-
-
-def target_move(target, randomly):
-    """
-    控制目标移动
-    :param target: 目标小车
-    :param randomly: 是否随机移动
-    :return:
-    """
-    if randomly:
-        # 方法一：随机轨迹
-        msgs = randomly_move()
-    else:
-        # 方法二：自定义轨迹
-        msgs = defined_move()
-    for msg in msgs:
-        target.send(msg)
-        time.sleep(0.2)
-
-
-def randomly_move():
-    # 随机轨迹，概率：1/3 1/4 1/4 1/12 1/12
-    control = ['w', 'w', 'w', 'w', 'd', 'd', 'd', 'a', 'a', 'a', 'z', 'c']
-    cmd_index = random.randint(0, 11)
-    cmd = control[cmd_index]
-    return get_control(cmd)
-
-
-# 自定义轨迹
-defined_control = ['w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w','z', 'a',
-                   'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'z', 'a',
-                   'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w', 'w']
-def defined_move():
-    if len(defined_control) > 0:
-        cmd = defined_control.pop()
-    else:
-        cmd = 's'
-    return get_control(cmd)

@@ -4,26 +4,19 @@
 # @File : server_for_single_car2.py
 # @Software : PyCharm
 # @Desc : 用于单个小车去追踪另外一个目标小车
-import time
-import msvcrt
 import traceback
-import numpy as np
 import socket
 import threading
-import matplotlib.pyplot as plt
-from datetime import datetime
-from location import trilateration
 from car_control import *
-from gps_transform import gps_transform
 from models import Car, UWB
+from test_utils import target_move
 
 
 total_car_number = 5
 ip2CarNumber = {
-    '192.168.31.99': 1,
-    # '169.254.62.154': 2,
-    '192.168.2.16': 3,
-    '192.168.43.82': 4,
+    '192.168.43.82': 1,
+    '192.168.43.64': 2,
+    '192.168.43.40': 3,
     '192.168.43.242': 5,
 }
 ip2UWB = {
@@ -39,12 +32,10 @@ uwb_gps = [[103.92792, 30.75436], [103.92768, 30.75445], [0, 0]]
 for i in range(1, 4):
     uwb_map[i] = UWB(i, uwb_gps[i - 1])
 
-lock = threading.Lock()
+# lock = threading.Lock()
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 host = '192.168.43.230'
 port = 8888
-# host = '127.0.0.1'
-# port = 6666
 server.bind((host, port))
 server.listen(total_car_number + 3)
 
@@ -56,7 +47,6 @@ def bind_socket():
         try:
             client, addr = server.accept()
             if client:
-                lock.acquire()
                 global car_map, uwb_map
                 if ip2UWB.get(addr[0], None):
                     # 如果是UWBip地址，则需要建立单独的线程来控制uwb；
@@ -80,12 +70,8 @@ def bind_socket():
                         thread = threading.Thread(target=car.receive)
                         thread.start()
                     print("小车 {0} 已连接！".format(car_number))
-                    # send_msg = "你已经接入系统，" + str(addr[0]) + '！'
-                    # buffersize = car.send(send_msg)
-                    # print("发送了{0}个比特过去".format(buffersize))
                 else:
                     pass
-                lock.release()
         except:
             print("服务器取消监听了！！！")
             break
@@ -99,16 +85,14 @@ def main(control):
     file = open('./car_logs/car_cmd_{0}.txt'.format(datetime.now().strftime('%m_%d')), mode='a')
     file.write("************* 开始测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
                + " *************" + '\n')
-    car = car_map[4]
+    car = car_map[2]
     try:
         count = 0
         while count < 1000:
             if car.gps is not None:
-                info = move_forward_target(car, target_car.position)
+                info = move_forward_target(car, target_car.position, variable_speed=True)
                 target_move(target_car, randomly=False)
                 file.write(info + '\n')
-                # count += 1
-                # time.sleep(0.1)
     except Exception:
         traceback.print_exc()
     finally:
