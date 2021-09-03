@@ -2,14 +2,15 @@
 <project version="4">
   <component name="Encoding" native2AsciiForPropertiesFiles="true" defaultCharsetForPropertiesFiles="UTF-8">
     <file url="file://$PROJECT_DIR$/README.md" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/car_control.py" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/models.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/history/aio_test/car_logs/car_1.txt" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/history/original_test/server_pre.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/history/sync_server_test/car_control.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/history/sync_server_test/models.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/history/sync_server_test/server_for_single_car.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/history/sync_server_test/server_for_single_car2.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/history/sync_server_test/server_pre_implement.py" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/requirements.txt" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/server_for_single_car.py" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/server_for_single_car2.py" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/server_pre_implement.py" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/test.py" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/unused_files/server_pre.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/test.py" charset="UTF-8" />
     <file url="PROJECT" charset="UTF-8" />
   </component>
 </project>
