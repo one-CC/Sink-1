@@ -1,3 +1,4 @@
-/logs/*
+logs/car_logs/*
+logs/uwb_logs/*
 /.idea
 /__pycache__
