@@ -12,9 +12,9 @@ import aiofiles
 import aiohttp
 from aiofiles.threadpool import AsyncTextIOWrapper
 
-from src.car_control import *
-from src.models import Car, UWB
-from src.utils import get_root_path
+from car_control import *
+from models import Car, UWB
+from utils import get_root_path
 
 ROOT_PATH = get_root_path()
 total_car_number = 5
@@ -54,7 +54,7 @@ def accept_socket(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     elif ip2CarNumber.get(ip, None):
         # 如果为小车地址；
         car_number = ip2CarNumber[ip]
-        car = car_map[car_number + i]
+        car = car_map[car_number]
         # 如果对应小车没有建立连接，则连接并创建receive协程
         if not car.connected:
             car.connect_car(reader, writer)
@@ -63,8 +63,8 @@ def accept_socket(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
 
 
 async def listen_socket():
-    """ 监听小车和uwb的连接请求 """
-    server = await asyncio.start_server(accept_socket, host="127.0.0.1", port=8888, family=socket.AF_INET)
+    """ 监听小车和uwb的连接请求 127.0.0.1"""
+    server = await asyncio.start_server(accept_socket, host="192.168.43.230", port=8888, family=socket.AF_INET)
     print("等待连接中...")
     try:
         await server.serve_forever()
@@ -75,21 +75,24 @@ async def listen_socket():
 
 async def post_data(session: aiohttp.ClientSession):
     """ 上传各个小车的数据给后台服务器 """
-    url = ""
+    url = "http://192.168.43.35:8080/car/insert"
+    headers = {'content-type': 'application/json'}
     data_list = []
     for car in car_map.values():
-        base_map = dict()
-        base_map["number"] = car.car_number
-        base_map["gps"] = car.gps
-        base_map["angle"] = car.angle
-        base_map["battery"] = car.battery
-        data_list.append(base_map)
+        if car.connected:
+            base_map = dict()
+            base_map["number"] = car.car_number
+            base_map["gps"] = car.gps
+            base_map["angle"] = car.angle
+            base_map["battery"] = car.battery
+            data_list.append(base_map)
     json_data = json.dumps(data_list)
     while True:
         if session.closed:
             break
-        await session.post(url=url, data=json_data)
-        await asyncio.sleep(1.0)
+        await session.post(url=url, data=json_data, headers=headers)
+        print(json_data)
+        await asyncio.sleep(2.0)
 
 
 async def main():
@@ -99,7 +102,7 @@ async def main():
     await cmd_log.write("************* 开始测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
                         + " *************" + '\n')
     target_car = car_map[5]
-    car = car_map[2]
+    car = car_map[3]
     while not target_car.connected or not car.connected:
         await asyncio.sleep(0.1)
 
@@ -107,6 +110,7 @@ async def main():
     asyncio.create_task(post_data(session))
     try:
         while True:
+            # await asyncio.sleep(0.5)
             if car.gps is not None:
                 info = await move_forward_target(car, target_car.position, variable_speed=True)
                 await cmd_log.write(info + '\n')

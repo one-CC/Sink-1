@@ -11,10 +11,10 @@ from datetime import datetime
 import aiofiles
 from aiofiles.threadpool import AsyncTextIOWrapper
 
-from src.gps_transform import gps_transform
-from src.utils import get_root_path
+from gps_transform import gps_transform
+from utils import get_root_path
 
-TIME_STAMP = 0.1
+TIME_STAMP = 0.2
 ROOT_PATH = get_root_path()
 
 

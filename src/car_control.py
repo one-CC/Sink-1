@@ -7,7 +7,7 @@ import math
 from datetime import datetime
 from typing import Dict, List
 
-from src.models import Car
+from models import Car
 
 def get_control(cmd: str):
     """

@@ -1,26 +1,25 @@
 # -*- coding utf-8 -*-
 # @Time : 2021/5/29 17:15
 # @Author : DH
-# @File : server_for_single_car2.py
+# @File : server_for_pre_implement.py
 # @Software : PyCharm
-# @Desc : 用于测试三个uwb的三角定位，不涉及小车控制
+# @Desc : 调度算法的预实现
 import socket
 import threading
 import traceback
 
-from history.sync_server_test.car_control import *
-from history.sync_server_test.models import Car, UWB
-from src.gps_transform import *
+from history.sync_sink.car_control import *
+from history.sync_sink.models import Car, UWB
+from src.gps_transform import position_transform
 from src.location import trilateration
 from src.utils import *
 
 ROOT_PATH = get_root_path()
 total_car_number = 5
 ip2CarNumber = {
-    '192.168.31.99': 1,
-    # '169.254.62.154': 2,
-    '192.168.2.16': 3,
-    '192.168.43.82': 4,
+    '192.168.43.82': 1,
+    '192.168.43.64': 2,
+    '192.168.43.40': 3,
     '192.168.43.242': 5,
 }
 
@@ -40,12 +39,9 @@ uwb_gps = [[103.92792, 30.75436], [103.92768, 30.75445], [0, 0]]
 for i in range(1, 4):
     uwb_map[i] = UWB(i, uwb_gps[i - 1])
 
-lock = threading.Lock()
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 host = '192.168.43.230'
 port = 8888
-# host = '127.0.0.1'
-# port = 6666
 server.bind((host, port))
 server.listen(total_car_number + 3)
 
@@ -57,7 +53,6 @@ def bind_socket():
         try:
             client, addr = server.accept()
             if client:
-                lock.acquire()
                 global car_map, uwb_map
                 if ip2UWB.get(addr[0], None):
                     # 如果是UWBip地址，则需要建立单独的线程来控制uwb；
@@ -81,22 +76,26 @@ def bind_socket():
                         thread = threading.Thread(target=car.receive)
                         thread.start()
                     print("小车 {0} 已连接！".format(car_number))
-                    # send_msg = "你已经接入系统，" + str(addr[0]) + '！'
-                    # buffersize = car.send(send_msg)
-                    # print("发送了{0}个比特过去".format(buffersize))
                 else:
                     pass
-                lock.release()
         except:
             print("服务器取消监听了！！！")
             break
 
 
 def main(control):
-    file = open('{0}/logs/car_logs/car_cmd_{1}.txt'.format(ROOT_PATH,
-                                                           datetime.now().strftime('%m_%d')), mode='a')
-    file.write("************* 开始测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-               + " *************" + '\n')
+    # p0 = gps_transform([103.92388, 30.74216])
+    # p1 = gps_transform([103.93755, 30.75348])
+    # area_x = [p0[0], p1[0]]
+    # area_y = [p0[1], p1[1]]
+    cmd_log = open('{0}/logs/car_logs/car_cmd_{1}.txt'.format(ROOT_PATH,
+                                                              datetime.now().strftime('%m_%d')), mode='a')
+    cmd_log.write("************* 开始测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                  + " *************" + '\n')
+    target_log = open('{0}/logs/uwb_logs/target_gps_{1}.txt'.format(ROOT_PATH,
+                                                                    datetime.now().strftime('%m_%d')), mode='a')
+    target_log.write("************* 开始测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                     + " *************" + '\n')
     # 首先需要等待三个 uwb 都连接上
     while not all_uwbs_connected(uwb_map):
         pass
@@ -110,16 +109,22 @@ def main(control):
                 target_position = trilateration(uwb_map[1].position, uwb_map[2].position, uwb_map[3].position,
                                                 d1, d2, d3)
                 target_gps = position_transform(target_position)
-                print(target_gps)
-                # count += 1
-                # time.sleep(0.1)
+                target_log.write("{0}：{1}\n".format(datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3], target_gps))
+                # selected_cars = top3_closest_cars(target_position, car_map)
+                selected_cars = [car_map[1]]
+                for car in selected_cars:
+                    info = move_forward_target(car, target_position, variable_speed=True)
+                    cmd_log.write(info + '\n')
     except Exception:
         traceback.print_exc()
     finally:
         print("服务器关闭！")
-        file.write("************* 结束测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-                   + " *************" + '\n\n')
-        file.close()
+        cmd_log.write("************* 结束测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                      + " *************" + '\n\n')
+        cmd_log.close()
+        target_log.write("************* 结束测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                         + " *************" + '\n\n')
+        target_log.close()
 
 
 if __name__ == '__main__':
@@ -127,6 +132,3 @@ if __name__ == '__main__':
     listen_thread.setDaemon(True)
     listen_thread.start()
     main(control=True)
-
-
-

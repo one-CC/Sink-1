@@ -5,9 +5,8 @@
 # @Desc : 这个文件存放测试时可能会使用到的方法或类
 import random
 
-from src.car_control import get_control
-from src.gps_transform import gps_transform
-from src.models import Car
+from car_control import get_control
+from models import Car
 
 
 #  键盘读取类
@@ -80,20 +79,6 @@ class ControlKeyboard:
             msg.append('$0,0,0,0,0,0,0,1,0#')
 
         return msg
-
-
-def generate_trajectory(start_gps: list):
-    """
-    根据一个起始GPS位置，产生一段轨迹。主要用于目标轨迹生成
-    :param start_gps: 起始GPS
-    :return: 一段运动轨迹的平面坐标列表
-    """
-    position = gps_transform(start_gps)
-    positions = [position]
-    for _ in range(20):
-        position = [position[0] + 0.2, position[1]]
-        positions.append(position)
-    return positions
 
 
 async def target_move(target: Car, randomly: bool):

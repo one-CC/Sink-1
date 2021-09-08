@@ -10,9 +10,9 @@ import threading
 import time
 import traceback
 
-from history.sync_server_test.car_control import *
-from history.sync_server_test.models import Car, UWB
-from history.sync_server_test.test_utils import ControlKeyboard
+from history.sync_sink.car_control import *
+from history.sync_sink.models import Car, UWB
+from history.sync_sink.test_utils import ControlKeyboard
 from src.gps_transform import gps_transform
 from src.utils import get_root_path
 

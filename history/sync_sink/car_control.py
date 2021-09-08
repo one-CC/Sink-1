@@ -6,7 +6,7 @@
 import math
 from datetime import datetime
 
-from history.sync_server_test.models import Car
+from history.sync_sink.models import Car
 
 
 def get_control(cmd: str):

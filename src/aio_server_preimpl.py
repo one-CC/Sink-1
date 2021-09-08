@@ -12,11 +12,11 @@ import aiofiles
 import aiohttp
 from aiofiles.threadpool import AsyncTextIOWrapper
 
-from src.car_control import *
-from src.gps_transform import position_transform
-from src.location import trilateration
-from src.models import Car, UWB
-from src.utils import *
+from car_control import *
+from gps_transform import position_transform
+from location import trilateration
+from models import Car, UWB
+from utils import *
 
 ROOT_PATH = get_root_path()
 total_car_number = 5

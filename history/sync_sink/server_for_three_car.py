@@ -7,8 +7,8 @@ import socket
 import threading
 import traceback
 
-from history.sync_server_test.car_control import *
-from history.sync_server_test.models import Car, UWB
+from history.sync_sink.car_control import *
+from history.sync_sink.models import Car, UWB
 from src.utils import get_root_path
 
 ROOT_PATH = get_root_path()
