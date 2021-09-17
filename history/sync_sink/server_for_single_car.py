@@ -5,10 +5,16 @@
 # @Software : PyCharm
 # @Desc : 用于单个小车朝一个点走
 import msvcrt
+import os
 import socket
+import sys
 import threading
 import time
 import traceback
+
+current_path = os.path.abspath(os.path.dirname(__file__))
+ROOT_PATH = current_path[:current_path.find("Sink") + len("Sink")]
+sys.path.append(ROOT_PATH)
 
 from history.sync_sink.car_control import *
 from history.sync_sink.models import Car, UWB

@@ -3,15 +3,20 @@
 # @Author : donghao
 # @File : server_for_three_car.py
 # @Desc : 用于三个小车去追踪另外一个目标小车(人拿着移动)
+import os
 import socket
+import sys
 import threading
 import traceback
 
+current_path = os.path.abspath(os.path.dirname(__file__))
+ROOT_PATH = current_path[:current_path.find("Sink") + len("Sink")]
+sys.path.append(ROOT_PATH)
+
 from history.sync_sink.car_control import *
 from history.sync_sink.models import Car, UWB
-from src.utils import get_root_path
+from src.utils import *
 
-ROOT_PATH = get_root_path()
 total_car_number = 5
 ip2CarNumber = {
     '192.168.43.82': 1,
@@ -78,13 +83,14 @@ def bind_socket():
 
 def main(control):
     target_car = car_map[5]
-    while not target_car.connected:
-        pass
     file = open('{0}/logs/car_logs/car_cmd_{1}.txt'.format(ROOT_PATH,
                                                            datetime.now().strftime('%m_%d')), mode='a')
     file.write("************* 开始测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
                + " *************" + '\n')
-    cars = [car_map[1], car_map[3]]
+    cars = [car_map[2], car_map[3]]
+    while not target_car.connected or not all_cars_connected(car_list=cars):
+        pass
+
     try:
         while True:
             for car in cars:

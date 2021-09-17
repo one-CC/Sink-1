@@ -169,7 +169,7 @@ def move_forward_target(car: Car, target_position: list, variable_speed=False) -
     return "{0}：位置向量的角度：{1}\t小车朝向角度：{2}\t{3}".format(time_string, angle, projected_car_angle, info)
 
 
-def top3_closest_cars(target_position: list, car_map: dict):
+def top3_best_cars(target_position: list, car_map: dict):
     """
     计算当前时刻距离目标最近的三个小车
     :param car_map:     小车字典

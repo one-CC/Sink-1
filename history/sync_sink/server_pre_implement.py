@@ -4,10 +4,15 @@
 # @File : server_for_pre_implement.py
 # @Software : PyCharm
 # @Desc : 调度算法的预实现
+import os
 import socket
+import sys
 import threading
 import traceback
 
+current_path = os.path.abspath(os.path.dirname(__file__))
+ROOT_PATH = current_path[:current_path.find("Sink") + len("Sink")]
+sys.path.append(ROOT_PATH)
 from history.sync_sink.car_control import *
 from history.sync_sink.models import Car, UWB
 from src.gps_transform import position_transform

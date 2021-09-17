@@ -13,11 +13,16 @@ def all_uwbs_connected(uwb_map):
             return False
     return True
 
-def all_cars_connected(car_map):
+def all_cars_connected(car_map=None, car_list=None):
     """ 判断是否所有的小车都已经连接上 """
-    for car in car_map.values():
-        if not car.connected:
-            return False
+    if car_map is not None:
+        for car in car_map.values():
+            if not car.connected:
+                return False
+    if car_list is not None:
+        for car in car_list:
+            if not car.connected:
+                return False
     return True
 
 def get_root_path():
