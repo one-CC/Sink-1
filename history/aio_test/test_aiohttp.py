@@ -28,6 +28,8 @@ async def async_request_many():
     for _ in range(10):
         task.append(async_request(session))
     await asyncio.gather(*task)
+    while len(asyncio.Task.all_tasks()) > 1:
+        await asyncio.sleep(0.5)
     await session.close()
 
 if __name__ == '__main__':

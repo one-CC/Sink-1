@@ -62,6 +62,10 @@ class Car:
                     format_str = "加速度：{0}    角度：{1}    GPS：{2}".format(self.accelerate, self.angle, self.gps)
                     time_string = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
                     await file.write("{0} ：{1}\n".format(time_string, format_str))
+        except asyncio.CancelledError:
+            print("car_{0} receive() was cancelled".format(self.car_number))
+        except ConnectionError:
+            print("小车 {0} 的tcp连接出问题！".format(self.car_number))
         except Exception:
             traceback.print_exc()
         finally:
@@ -78,7 +82,7 @@ class Car:
                 await self.__writer.drain()
                 await asyncio.sleep(TIME_STAMP)
             self.battery = max(self.battery - energy_consumption, 0)
-        except ConnectionResetError:
+        except ConnectionError:
             print("小车 {0} 的tcp连接已断开！".format(self.car_number))
             self.close_car()
 
@@ -125,6 +129,10 @@ class UWB:
                 # UBW的每个包只包含一个distance，包之间用一个#分隔
                 messages = (data.decode('utf-8')).split('#')
                 self.distance = float(messages[-2])  # 最后一个是空字符串
+        except asyncio.CancelledError:
+            print("uwb_{0} receive() was cancelled".format(self.uwb_number))
+        except ConnectionError:
+            print("UWB {0} 的tcp连接出问题！".format(self.uwb_number))
         except Exception:
             traceback.print_exc()
         finally:

@@ -3,7 +3,6 @@
 # @Author : DH
 # @Software : PyCharm
 # @Desc : 一辆车追踪另一辆车的异步版本
-import asyncio
 import json
 import socket
 import traceback
@@ -14,7 +13,7 @@ from aiofiles.threadpool import AsyncTextIOWrapper
 
 from car_control import *
 from models import Car, UWB
-from utils import get_root_path, all_cars_connected
+from utils import *
 
 ROOT_PATH = get_root_path()
 total_car_number = 5
@@ -65,11 +64,13 @@ def accept_socket(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
 
 
 async def listen_socket():
-    """ 监听小车和uwb的连接请求 """
+    """ 监听小车和uwb的连接请求 192.168.43.230"""
     server = await asyncio.start_server(accept_socket, host="192.168.43.230", port=8888, family=socket.AF_INET)
     print("等待连接中...")
     try:
         await server.serve_forever()
+    except asyncio.CancelledError:
+        print('listen_socket() was cancelled')
     finally:
         server.close()
         await server.wait_closed()
@@ -79,21 +80,24 @@ async def post_data(session: aiohttp.ClientSession):
     """ 上传各个小车的数据给后台服务器 """
     url = "http://192.168.43.35:8080/car/insert"
     headers = {'content-type': 'application/json'}
-    while True:
-        data_list = []
-        for car in car_map.values():
-            base_map = dict()
-            base_map["number"] = car.car_number
-            base_map["gps"] = car.gps
-            base_map["angle"] = car.angle
-            base_map["battery"] = car.battery
-            base_map["connected"] = car.connected
-            data_list.append(base_map)
-        json_data = json.dumps(data_list)
-        if session.closed:
-            break
-        await session.post(url=url, data=json_data, headers=headers)
-        await asyncio.sleep(1.0)
+    try:
+        while True:
+            data_list = []
+            for car in car_map.values():
+                base_map = dict()
+                base_map["number"] = car.car_number
+                base_map["gps"] = car.gps
+                base_map["angle"] = car.angle
+                base_map["battery"] = car.battery
+                base_map["connected"] = car.connected
+                data_list.append(base_map)
+            json_data = json.dumps(data_list)
+            if session.closed:
+                break
+            await session.post(url=url, data=json_data, headers=headers)
+            await asyncio.sleep(1.0)
+    except asyncio.CancelledError:
+        print('post_data(session) was cancelled')
 
 
 async def main():
@@ -110,27 +114,36 @@ async def main():
     while not target_car.connected or not all_cars_connected(car_list=cars):
         await asyncio.sleep(0.1)
 
-    # session = aiohttp.ClientSession()
-    # asyncio.create_task(post_data(session))
+    session = aiohttp.ClientSession()
+    asyncio.create_task(post_data(session))
 
     try:
         while True:
             for car in cars:
                 info = await move_forward_target(car, target_car.position, variable_speed=True)
                 await cmd_log.write(info + '\n')
+    except asyncio.CancelledError:
+        print('main() was cancelled')
     except Exception:
         traceback.print_exc()
     finally:
-        print("服务器关闭！")
         await cmd_log.write("************* 结束测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
                             + " *************" + '\n\n')
         await cmd_log.close()
-        # await session.close()
-        await asyncio.sleep(1.0)
+        await session.close()
+        await asyncio.sleep(1)
+        print("服务器关闭！")
 
 
 if __name__ == '__main__':
+    event_loop = asyncio.get_event_loop()
     try:
-        asyncio.run(main())
+        event_loop.run_until_complete(main())
     except KeyboardInterrupt:
         print("键盘中断！")
+        for task in asyncio.Task.all_tasks():
+            task.cancel()   # 取消所有的Task
+        while not all_tasks_done():
+            event_loop.stop()   # 停止本次事件循环
+            event_loop.run_forever()    # 开启下轮事件循环，在下轮事件循环中被取消的Task对象将抛出asyncio.CancelledError
+    event_loop.close()
