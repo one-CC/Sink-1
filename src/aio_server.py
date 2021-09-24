@@ -6,6 +6,8 @@
 import json
 import socket
 import traceback
+import time
+import asyncio
 
 import aiofiles
 import aiohttp
@@ -16,13 +18,14 @@ from models import Car, UWB
 from utils import *
 
 ROOT_PATH = get_root_path()
-total_car_number = 5
+total_car_number = 6
 ip2CarNumber = {
     '192.168.43.82': 1,
     '192.168.43.64': 2,
     '192.168.43.40': 3,
-    '192.168.43.242': 5,
-    '127.0.0.1': 4,
+    '192.168.43.47': 4,
+    '192.168.43.21': 5,
+    '192.168.43.242': 6,
 }
 
 ip2UWBNumber = {
@@ -38,6 +41,8 @@ uwb_map = {}
 uwb_gps = [[103.92792, 30.75436], [103.92768, 30.75445], [0, 0]]
 for i in range(1, 4):
     uwb_map[i] = UWB(i, uwb_gps[i - 1])
+# 协程map, key为小车编号
+coroutine_map = {}
 
 
 def accept_socket(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
@@ -59,13 +64,14 @@ def accept_socket(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         # 如果对应小车没有建立连接，则连接并创建receive协程
         if not car.connected:
             car.connect_car(reader, writer)
-            asyncio.create_task(car.receive())
+            t = asyncio.create_task(car.receive())
+            coroutine_map[car.car_number] = t
             print("小车 {0} 已连接！".format(car.car_number))
 
 
 async def listen_socket():
     """ 监听小车和uwb的连接请求 192.168.43.230"""
-    server = await asyncio.start_server(accept_socket, host="192.168.43.230", port=8888, family=socket.AF_INET)
+    server = await asyncio.start_server(accept_socket, host="192.168.43.231", port=8888, family=socket.AF_INET)
     print("等待连接中...")
     try:
         await server.serve_forever()
@@ -100,6 +106,15 @@ async def post_data(session: aiohttp.ClientSession):
         print('post_data(session) was cancelled')
 
 
+def heart_beat_check():
+    """ Sink端应用层心跳机制 """
+    for car in car_map.values():
+        if car.connected and int(time.time()) - car.last_upstream_time > 5:
+            car.close_car()
+            coroutine_map[car.car_number].cancel()
+            coroutine_map[car.car_number] = None
+
+
 async def main():
     asyncio.create_task(listen_socket())
 
@@ -108,10 +123,12 @@ async def main():
     await cmd_log.write("************* 开始测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
                         + " *************" + '\n')
 
-    target_car = car_map[5]
-    cars = [car_map[2], car_map[3]]
+    target_car = car_map[1]
+    cars = [car_map[1], car_map[2], car_map[3], car_map[4], car_map[5]]
 
     while not target_car.connected or not all_cars_connected(car_list=cars):
+        await asyncio.sleep(0.1)
+    while True:
         await asyncio.sleep(0.1)
 
     session = aiohttp.ClientSession()
@@ -119,7 +136,16 @@ async def main():
 
     try:
         while True:
-            for car in cars:
+            # if int(time.time()) % 10 == 0:
+            #     heart_beat_check()
+            selected_cars = top3_best_cars(target_car.position, cars)
+            if len(selected_cars) < 3:
+                print("可调度节点小于3！")
+                break
+            for car in selected_cars:
+                if not car.connected:
+                    # 可能选出三辆小车后，断连，此时不应发送消息
+                    continue
                 info = await move_forward_target(car, target_car.position, variable_speed=True)
                 await cmd_log.write(info + '\n')
     except asyncio.CancelledError:
@@ -142,8 +168,8 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print("键盘中断！")
         for task in asyncio.Task.all_tasks():
-            task.cancel()   # 取消所有的Task
+            task.cancel()  # 取消所有的Task
         while not all_tasks_done():
-            event_loop.stop()   # 停止本次事件循环
-            event_loop.run_forever()    # 开启下轮事件循环，在下轮事件循环中被取消的Task对象将抛出asyncio.CancelledError
+            event_loop.stop()  # 停止本次事件循环
+            event_loop.run_forever()  # 开启下轮事件循环，在下轮事件循环中被取消的Task对象将抛出asyncio.CancelledError
     event_loop.close()
