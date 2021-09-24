@@ -25,8 +25,12 @@ def all_tasks_done():
 
 async def main():
     try:
+        task_map = dict()
         for i in range(5, 10):
-            asyncio.create_task(do_some_work(i))
+            t = asyncio.create_task(do_some_work(i))
+            task_map[i] = t
+        await asyncio.sleep(2)
+        print(task_map[7].cancel())
         while True:
             await asyncio.sleep(1)
     except asyncio.CancelledError:

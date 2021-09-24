@@ -154,29 +154,36 @@ async def move_forward_target(car: Car, target_position: list, variable_speed=Fa
     return "{0}：位置向量的角度：{1}\t小车朝向角度：{2}\t{3}".format(time_string, angle, projected_car_angle, info)
 
 
-def top3_closest_cars(target_position: list, car_map: Dict[int, Car]) -> List[Car]:
+def top3_best_cars(target_position: list, car_list: List[Car]) -> List[Car]:
     """
     计算当前时刻距离目标最近的三个小车
-    :param car_map:     小车字典
+    :param car_list:     小车列表
     :param target_position:     目标的平面坐标
     :return:    被选择的三个小车
     """
     selected_car = []
     score_map = dict()
     max_distance = 0
-    for car in car_map.values():
+    min_distance = 65535
+    for car in car_list:
         max_distance = max(max_distance, calculate_distance(car.position, target_position))
-    for num, car in car_map.items():
+        min_distance = min(min_distance, calculate_distance(car.position, target_position))
+    for car in car_list:
         distance = calculate_distance(car.position, target_position)
         # 计算得分, 偏重于距离
-        score = 0 if car.battery < 5 else 200 * (1 - distance * 1.0 / max_distance) + car.battery
+        score = 0 if car.battery < 5 else 200 * (1 - (distance - min_distance) / (max_distance - min_distance)) + car.battery
         if score > 0:
             score_map[score] = car
+    info = "选择小车："
     if len(score_map) >= 3:
         rank_map = sorted(score_map)
         selected_car.append(score_map[rank_map[0]])
+        info = info + str(selected_car[0].car_number) + ", "
         selected_car.append(score_map[rank_map[1]])
+        info = info + str(selected_car[1].car_number) + ", "
         selected_car.append(score_map[rank_map[2]])
+        info = info + str(selected_car[2].car_number) + ", "
+    print(info)
     return selected_car
 
 
