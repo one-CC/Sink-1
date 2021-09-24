@@ -9,6 +9,7 @@ from typing import Dict, List
 
 from models import Car
 
+
 def get_control(cmd: str):
     """
     根据cmd，返回相应的指令及其能耗
@@ -154,19 +155,20 @@ async def move_forward_target(car: Car, target_position: list, variable_speed=Fa
     return "{0}：位置向量的角度：{1}\t小车朝向角度：{2}\t{3}".format(time_string, angle, projected_car_angle, info)
 
 
-def top3_closest_cars(target_position: list, car_map: Dict[int, Car]) -> List[Car]:
+def top3_closest_cars(target_position: list, car_list: List[Car]) -> List[Car]:
     """
     计算当前时刻距离目标最近的三个小车
-    :param car_map:     小车字典
+    :param car_list:     小车字典
     :param target_position:     目标的平面坐标
     :return:    被选择的三个小车
     """
     selected_car = []
     score_map = dict()
     max_distance = 0
-    for car in car_map.values():
+    connected_car_list = (car for car in car_list if car.connected)
+    for car in connected_car_list:
         max_distance = max(max_distance, calculate_distance(car.position, target_position))
-    for num, car in car_map.items():
+    for num, car in connected_car_list:
         distance = calculate_distance(car.position, target_position)
         # 计算得分, 偏重于距离
         score = 0 if car.battery < 5 else 200 * (1 - distance * 1.0 / max_distance) + car.battery
@@ -177,6 +179,5 @@ def top3_closest_cars(target_position: list, car_map: Dict[int, Car]) -> List[Ca
         selected_car.append(score_map[rank_map[0]])
         selected_car.append(score_map[rank_map[1]])
         selected_car.append(score_map[rank_map[2]])
+
     return selected_car
-
-

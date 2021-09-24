@@ -16,13 +16,14 @@ from models import Car, UWB
 from utils import *
 
 ROOT_PATH = get_root_path()
-total_car_number = 5
+total_car_number = 6
 ip2CarNumber = {
     '192.168.43.82': 1,
     '192.168.43.64': 2,
     '192.168.43.40': 3,
-    '192.168.43.242': 5,
-    '127.0.0.1': 4,
+    '192.168.43.47': 4,
+    '192.168.43.21': 5,
+    '192.168.43.242': 6,
 }
 
 ip2UWBNumber = {
@@ -65,7 +66,7 @@ def accept_socket(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
 
 async def listen_socket():
     """ 监听小车和uwb的连接请求 192.168.43.230"""
-    server = await asyncio.start_server(accept_socket, host="192.168.43.230", port=8888, family=socket.AF_INET)
+    server = await asyncio.start_server(accept_socket, host="192.168.43.113", port=8888, family=socket.AF_INET)
     print("等待连接中...")
     try:
         await server.serve_forever()
@@ -113,6 +114,8 @@ async def main():
 
     while not target_car.connected or not all_cars_connected(car_list=cars):
         await asyncio.sleep(0.1)
+    while True:
+        await asyncio.sleep(0.1)
 
     session = aiohttp.ClientSession()
     asyncio.create_task(post_data(session))
@@ -142,8 +145,8 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print("键盘中断！")
         for task in asyncio.Task.all_tasks():
-            task.cancel()   # 取消所有的Task
+            task.cancel()  # 取消所有的Task
         while not all_tasks_done():
-            event_loop.stop()   # 停止本次事件循环
-            event_loop.run_forever()    # 开启下轮事件循环，在下轮事件循环中被取消的Task对象将抛出asyncio.CancelledError
+            event_loop.stop()  # 停止本次事件循环
+            event_loop.run_forever()  # 开启下轮事件循环，在下轮事件循环中被取消的Task对象将抛出asyncio.CancelledError
     event_loop.close()
