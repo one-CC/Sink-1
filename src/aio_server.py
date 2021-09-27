@@ -123,19 +123,18 @@ async def main():
     await cmd_log.write("************* 开始测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
                         + " *************" + '\n')
 
-    target_car = car_map[1]
+    target_car = car_map[6]
     cars = [car_map[1], car_map[2], car_map[3], car_map[4], car_map[5]]
 
     while not target_car.connected or not all_cars_connected(car_list=cars):
         await asyncio.sleep(0.1)
-    while True:
-        await asyncio.sleep(0.1)
 
-    session = aiohttp.ClientSession()
-    asyncio.create_task(post_data(session))
+    # session = aiohttp.ClientSession()
+    # asyncio.create_task(post_data(session))
 
     try:
         while True:
+            await asyncio.sleep(0.5)
             # if int(time.time()) % 10 == 0:
             #     heart_beat_check()
             selected_cars = top3_best_cars(target_car.position, cars)
@@ -156,8 +155,13 @@ async def main():
         await cmd_log.write("************* 结束测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
                             + " *************" + '\n\n')
         await cmd_log.close()
-        await session.close()
+        # await session.close()
         await asyncio.sleep(1)
+        for car in car_map.values():
+            if len(car.temp_list) != 0:
+                avg_time = sum(car.temp_list) / len(car.temp_list)
+                print("小车{0} 的平均下行间隔: {1}, 下行次数: {2}, 最长下行间隔: {3}, 最短下行间隔: {4}".format(
+                    car.car_number, avg_time, len(car.temp_list)+1, max(car.temp_list), min(car.temp_list)))
         print("服务器关闭！")
 
 
