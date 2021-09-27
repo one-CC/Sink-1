@@ -6,6 +6,8 @@
 import json
 import socket
 import traceback
+import time
+import asyncio
 
 import aiofiles
 import aiohttp
@@ -39,6 +41,8 @@ uwb_map = {}
 uwb_gps = [[103.92792, 30.75436], [103.92768, 30.75445], [0, 0]]
 for i in range(1, 4):
     uwb_map[i] = UWB(i, uwb_gps[i - 1])
+# 协程map, key为小车编号
+coroutine_map = {}
 
 
 def accept_socket(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
@@ -60,13 +64,14 @@ def accept_socket(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         # 如果对应小车没有建立连接，则连接并创建receive协程
         if not car.connected:
             car.connect_car(reader, writer)
-            asyncio.create_task(car.receive())
+            t = asyncio.create_task(car.receive())
+            coroutine_map[car.car_number] = t
             print("小车 {0} 已连接！".format(car.car_number))
 
 
 async def listen_socket():
     """ 监听小车和uwb的连接请求 192.168.43.230"""
-    server = await asyncio.start_server(accept_socket, host="192.168.43.113", port=8888, family=socket.AF_INET)
+    server = await asyncio.start_server(accept_socket, host="192.168.43.231", port=8888, family=socket.AF_INET)
     print("等待连接中...")
     try:
         await server.serve_forever()
@@ -101,6 +106,15 @@ async def post_data(session: aiohttp.ClientSession):
         print('post_data(session) was cancelled')
 
 
+def heart_beat_check():
+    """ Sink端应用层心跳机制 """
+    for car in car_map.values():
+        if car.connected and int(time.time()) - car.last_upstream_time > 5:
+            car.close_car()
+            coroutine_map[car.car_number].cancel()
+            coroutine_map[car.car_number] = None
+
+
 async def main():
     asyncio.create_task(listen_socket())
 
@@ -109,20 +123,28 @@ async def main():
     await cmd_log.write("************* 开始测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
                         + " *************" + '\n')
 
-    target_car = car_map[5]
-    cars = [car_map[2], car_map[3]]
+    target_car = car_map[6]
+    cars = [car_map[1], car_map[2], car_map[3], car_map[4], car_map[5]]
 
     while not target_car.connected or not all_cars_connected(car_list=cars):
         await asyncio.sleep(0.1)
-    while True:
-        await asyncio.sleep(0.1)
 
-    session = aiohttp.ClientSession()
-    asyncio.create_task(post_data(session))
+    # session = aiohttp.ClientSession()
+    # asyncio.create_task(post_data(session))
 
     try:
         while True:
-            for car in cars:
+            await asyncio.sleep(0.5)
+            # if int(time.time()) % 10 == 0:
+            #     heart_beat_check()
+            selected_cars = top3_best_cars(target_car.position, cars)
+            if len(selected_cars) < 3:
+                print("可调度节点小于3！")
+                break
+            for car in selected_cars:
+                if not car.connected:
+                    # 可能选出三辆小车后，断连，此时不应发送消息
+                    continue
                 info = await move_forward_target(car, target_car.position, variable_speed=True)
                 await cmd_log.write(info + '\n')
     except asyncio.CancelledError:
@@ -133,8 +155,13 @@ async def main():
         await cmd_log.write("************* 结束测试，时间：" + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
                             + " *************" + '\n\n')
         await cmd_log.close()
-        await session.close()
+        # await session.close()
         await asyncio.sleep(1)
+        for car in car_map.values():
+            if len(car.temp_list) != 0:
+                avg_time = sum(car.temp_list) / len(car.temp_list)
+                print("小车{0} 的平均下行间隔: {1}, 下行次数: {2}, 最长下行间隔: {3}, 最短下行间隔: {4}".format(
+                    car.car_number, avg_time, len(car.temp_list)+1, max(car.temp_list), min(car.temp_list)))
         print("服务器关闭！")
 
 

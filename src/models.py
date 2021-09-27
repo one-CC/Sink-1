@@ -24,9 +24,13 @@ class Car:
         self.gps = None
         self.accelerate = None
         self.angle = None
-        self.position = [0, 0]
+        self.position = None
+        self.last_upstream_time = None
         self.battery = 100
         self.connected = False
+
+        self.time = None
+        self.temp_list = []
 
         self.__reader = None  # type: asyncio.StreamReader
         self.__writer = None  # type: asyncio.StreamWriter
@@ -59,6 +63,7 @@ class Car:
                     except Exception:
                         print("包解析错误！")
                         traceback.print_exc()
+                    self.last_upstream_time = int(time.time())
                     format_str = "加速度：{0}    角度：{1}    GPS：{2}".format(self.accelerate, self.angle, self.gps)
                     time_string = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
                     await file.write("{0} ：{1}\n".format(time_string, format_str))
@@ -78,10 +83,16 @@ class Car:
     async def send(self, messages: list, energy_consumption: float):
         try:
             for message in messages:
+                if self.__writer is None:
+                    # 有可能在发送消息前断开连接，此时应该中断发送
+                    raise ConnectionError
                 self.__writer.write(message.encode('utf-8'))
                 await self.__writer.drain()
                 await asyncio.sleep(TIME_STAMP)
             self.battery = max(self.battery - energy_consumption, 0)
+            if self.time is not None:
+                self.temp_list.append(time.time() - self.time)
+            self.time = time.time()
         except ConnectionError:
             print("小车 {0} 的tcp连接已断开！".format(self.car_number))
             self.close_car()
@@ -90,9 +101,15 @@ class Car:
         self.connected = True
         self.__reader = reader
         self.__writer = writer
+        self.last_upstream_time = int(time.time())
 
     def close_car(self):
         self.connected = False
+        self.gps = None
+        self.accelerate = None
+        self.angle = None
+        self.position = None
+        self.last_upstream_time = None
         self.__reader = None
         if self.__writer is not None:
             self.__writer.close()

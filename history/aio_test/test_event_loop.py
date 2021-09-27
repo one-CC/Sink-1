@@ -1,21 +1,19 @@
 # -*- coding utf-8 -*-
-# @Time : 2021/9/17 15:46
+# @Time : 2021/9/26 17:16
 # @Author : donghao
-# @File : test_cancel_task.py
-# @Desc : 测试如何终止各个Task对象
+# @File : test_event_loop.py
+# @Desc : 测试事件循环的执行规则
 import asyncio
 import time
 
 
 async def do_some_work(x):
-    print('Hello do_some_work:', x)
     try:
-        await asyncio.sleep(x)
-        print('do_some_work({}) is still active'.format(x))  # 如果这句话被打印，证明task仍是active
+        while True:
+            print('Hello do_some_work:', x)
+            await asyncio.sleep(1)
     except asyncio.CancelledError:
         print('task do_some_work({}) was canceled'.format(x))
-    finally:
-        await asyncio.sleep(0.5)
 
 def all_tasks_done():
     for t in asyncio.Task.all_tasks():
@@ -25,19 +23,15 @@ def all_tasks_done():
 
 async def main():
     try:
-        task_map = dict()
-        for i in range(5, 10):
-            t = asyncio.create_task(do_some_work(i))
-            task_map[i] = t
-        await asyncio.sleep(2)
-        print(task_map[7].cancel())
+        for i in range(1, 6):
+            asyncio.create_task(do_some_work(i))
         while True:
+            print("main task:", 0)
             await asyncio.sleep(1)
     except asyncio.CancelledError:
         print('main() was canceled')
 
 print('start...')
-start = time.time()
 event_loop = asyncio.get_event_loop()
 try:
     event_loop.run_until_complete(main())
@@ -50,5 +44,7 @@ except KeyboardInterrupt:
         event_loop.run_forever()  # 开启下轮事件循环
 finally:
     event_loop.close()
-end = time.time()
-print("total run time: ", end - start)
+
+
+
+
