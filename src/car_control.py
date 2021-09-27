@@ -4,6 +4,7 @@
 # @File : car_control.py
 # @Desc :
 import math
+import asyncio
 from datetime import datetime
 from typing import Dict, List
 
@@ -114,7 +115,7 @@ async def move_forward_target(car: Car, target_position: list, variable_speed=Fa
         # 距离小于四米，则不移动
         msgs, energy_consumption = get_control("s")
         info = "Action：原地不动"
-        await car.send(msgs, energy_consumption)
+        asyncio.create_task(car.send(msgs, energy_consumption))
         time_string = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + " 小车" + str(car.car_number)
         return "{0}：{1}".format(time_string, info)
     angle = calculate_angle(vector)
@@ -150,10 +151,9 @@ async def move_forward_target(car: Car, target_position: list, variable_speed=Fa
         # 原地左转
         info = "Action：原地左转"
         msgs, energy_consumption = get_control("z")
-    await car.send(msgs, energy_consumption)
+    asyncio.create_task(car.send(msgs, energy_consumption))
     time_string = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + " 小车" + str(car.car_number)
     return "{0}：位置向量的角度：{1}\t小车朝向角度：{2}\t{3}".format(time_string, angle, projected_car_angle, info)
-
 
 
 def top3_best_cars(target_position: list, car_list: List[Car]) -> List[Car]:

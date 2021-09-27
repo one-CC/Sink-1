@@ -29,6 +29,9 @@ class Car:
         self.battery = 100
         self.connected = False
 
+        self.time = None
+        self.temp_list = []
+
         self.__reader = None  # type: asyncio.StreamReader
         self.__writer = None  # type: asyncio.StreamWriter
 
@@ -87,6 +90,9 @@ class Car:
                 await self.__writer.drain()
                 await asyncio.sleep(TIME_STAMP)
             self.battery = max(self.battery - energy_consumption, 0)
+            if self.time is not None:
+                self.temp_list.append(time.time() - self.time)
+            self.time = time.time()
         except ConnectionError:
             print("小车 {0} 的tcp连接已断开！".format(self.car_number))
             self.close_car()
