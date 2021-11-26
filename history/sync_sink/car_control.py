@@ -11,82 +11,68 @@ from history.sync_sink.models import Car
 
 def get_control(cmd: str):
     """
-    根据cmd，返回相应的指令
+    根据cmd，返回相应的指令及其能耗
     :param cmd:     要完成的动作
     :return:    控制小车的指令列表, 能耗
     """
-    msg, energy_consumption = [], 0
+    msg, energy_consumption = "", 0
     # 小车方向
     if cmd == 'w':  # 前
-        msg.append('$1,0,0,0,0,0,0,0,0#')
-        msg.append('$0,0,0,0,0,0,0,0,0#')
+        msg = '$1,0,0,0,0,0,0,0,0#'
         energy_consumption = 0.4
     elif cmd == 'quick':  # 快速前
-        msg.append('$5,0,0,0,0,0,0,0,0#')
-        msg.append('$0,0,0,0,0,0,0,0,0#')
+        msg = '$5,0,0,0,0,0,0,0,0#'
         energy_consumption = 0.6
     elif cmd == 'slow':  # 慢速前
-        msg.append('$6,0,0,0,0,0,0,0,0#')
-        msg.append('$0,0,0,0,0,0,0,0,0#')
+        msg = '$6,0,0,0,0,0,0,0,0#'
         energy_consumption = 0.2
     elif cmd == 'x':  # 后
-        msg.append('$2,0,0,0,0,0,0,0,0#')
-        msg.append('$0,0,0,0,0,0,0,0,0#')
+        msg = '$2,0,0,0,0,0,0,0,0#'
         energy_consumption = 0.4
     elif cmd == 'a':  # 左
-        msg.append('$3,0,0,0,0,0,0,0,0#')
-        msg.append('$0,0,0,0,0,0,0,0,0#')
+        msg = '$3,0,0,0,0,0,0,0,0#$0,0,0,0,0,0,0,0,0#'
         energy_consumption = 0.2
     elif cmd == 'd':  # 右
-        msg.append('$4,0,0,0,0,0,0,0,0#')
-        msg.append('$0,0,0,0,0,0,0,0,0#')
+        msg = '$4,0,0,0,0,0,0,0,0#$0,0,0,0,0,0,0,0,0#'
         energy_consumption = 0.2
     elif cmd == 'z':  # 左转
-        msg.append('$0,1,0,0,0,0,0,0,0#')
-        msg.append('$0,0,0,0,0,0,0,0,0#')
+        msg = '$0,1,0,0,0,0,0,0,0#$0,0,0,0,0,0,0,0,0#'
         energy_consumption = 0.2
     elif cmd == 'c':  # 右转
-        msg.append('$0,2,0,0,0,0,0,0,0#')
-        msg.append('$0,0,0,0,0,0,0,0,0#')
+        msg = '$0,2,0,0,0,0,0,0,0#$0,0,0,0,0,0,0,0,0#'
         energy_consumption = 0.2
     elif cmd == 's':  # 停
-        msg.append('$0,0,0,0,0,0,0,0,0#')
+        msg = '$0,0,0,0,0,0,0,0,0#'
 
-    # 灯开关控制
+        # 灯开关控制
     elif cmd == 'v':  # 开
-        msg.append('$0,0,0,0,0,0,1,0,0#')
+        msg = '$0,0,0,0,0,0,1,0,0#'
     elif cmd == 'b':  # 关
-        msg.append('$0,0,0,0,0,0,8,0,0#')
+        msg = '$0,0,0,0,0,0,8,0,0#'
 
         # 摄像头方向
     elif cmd == 'i':  # 上
-        msg.append('$0,0,0,0,3,0,0,0,0#')
+        msg = '$0,0,0,0,3,0,0,0,0#'
         # msg.append('$0,0,0,0,8,0,0,0,0#')
     elif cmd == 'm':  # 下
-        msg.append('$0,0,0,0,4,0,0,0,0#')
+        msg = '$0,0,0,0,4,0,0,0,0#'
         # msg.append('$0,0,0,0,8,0,0,0,0#')
     elif cmd == 'j':  # 左
-        msg.append('$0,0,0,0,6,0,0,0,0#')
+        msg = '$0,0,0,0,6,0,0,0,0#'
         # msg.append('$0,0,0,0,8,0,0,0,0#')
     elif cmd == 'l':  # 右
-        msg.append('$0,0,0,0,7,0,0,0,0#')
+        msg = '$0,0,0,0,7,0,0,0,0#'
         # msg.append('$0,0,0,0,8,0,0,0,0#')
     elif cmd == 'k':  # 停
-        msg.append('$0,0,0,0,8,0,0,0,0#')
+        msg = '$0,0,0,0,8,0,0,0,0#'
 
-    # 超声波控制
+        # 超声波控制
     elif cmd == 'r':  # 左
-        msg.append('$0,0,0,0,1,0,0,0,0#')
+        msg = '$0,0,0,0,1,0,0,0,0#'
     elif cmd == 't':  # 中
-        msg.append('$0,0,0,0,0,0,0,0,1#')
+        msg = '$0,0,0,0,0,0,0,0,1#'
     elif cmd == 'y':  # 右
-        msg.append('$0,0,0,0,2,0,0,0,0#')
-
-    # 其他功能
-    elif cmd == 'f':  # 鸣笛
-        msg.append('$0,0,1,0,0,0,0,0,0#')
-    elif cmd == 'g':  # 灭火
-        msg.append('$0,0,0,0,0,0,0,1,0#')
+        msg = '$0,0,0,0,2,0,0,0,0#'
 
     return msg, energy_consumption
 

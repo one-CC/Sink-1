@@ -14,7 +14,7 @@ from aiofiles.threadpool import AsyncTextIOWrapper
 from gps_transform import gps_transform
 from utils import get_root_path
 
-TIME_STAMP = 0.2
+TIME_STAMP = 0.1
 ROOT_PATH = get_root_path()
 
 
@@ -26,11 +26,8 @@ class Car:
         self.angle = None
         self.position = None
         self.last_upstream_time = None
-        self.battery = 100
+        self.battery = 100.0
         self.connected = False
-
-        self.time = None
-        self.temp_list = []
 
         self.__reader = None  # type: asyncio.StreamReader
         self.__writer = None  # type: asyncio.StreamWriter
@@ -80,19 +77,14 @@ class Car:
             print("小车 {0} 的tcp连接已断开！".format(self.car_number))
             self.close_car()
 
-    async def send(self, messages: list, energy_consumption: float):
+    async def send(self, message: str, energy_consumption: float):
         try:
-            for message in messages:
-                if self.__writer is None:
-                    # 有可能在发送消息前断开连接，此时应该中断发送
-                    raise ConnectionError
-                self.__writer.write(message.encode('utf-8'))
-                await self.__writer.drain()
-                await asyncio.sleep(TIME_STAMP)
+            if self.__writer is None:
+                # 有可能在发送消息前断开连接，此时应该中断发送
+                raise ConnectionError
+            self.__writer.write(message.encode('utf-8'))
             self.battery = max(self.battery - energy_consumption, 0)
-            if self.time is not None:
-                self.temp_list.append(time.time() - self.time)
-            self.time = time.time()
+            await self.__writer.drain()
         except ConnectionError:
             print("小车 {0} 的tcp连接已断开！".format(self.car_number))
             self.close_car()

@@ -71,10 +71,9 @@ class Car:
             self.connected = False
             print("小车 {0} 的tcp连接已断开！".format(self.car_number))
 
-    def send(self, messages: list, energy_consumption: float):
-        for message in messages:
-            self.socket.send(message.encode('utf-8'))
-            time.sleep(TIME_STAMP)
+    def send(self, message: str, energy_consumption: float):
+        self.socket.send(message.encode('utf-8'))
+        time.sleep(TIME_STAMP)
         self.battery = max(self.battery - energy_consumption, 0)
 
     def __str__(self):

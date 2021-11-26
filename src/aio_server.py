@@ -20,12 +20,18 @@ from utils import *
 ROOT_PATH = get_root_path()
 total_car_number = 6
 ip2CarNumber = {
-    '192.168.43.82': 1,
-    '192.168.43.64': 2,
-    '192.168.43.40': 3,
-    '192.168.43.47': 4,
-    '192.168.43.21': 5,
-    '192.168.43.242': 6,
+    # '192.168.43.82': 1,
+    # '192.168.43.64': 2,
+    # '192.168.43.40': 3,
+    # '192.168.43.47': 4,
+    # '192.168.43.21': 5,
+    # '192.168.43.242': 6,
+    '192.168.43.173': 1,
+    '192.168.43.192': 2,
+    '192.168.43.133': 3,
+    '192.168.43.185': 4,
+    '192.168.43.100': 5,
+    '192.168.43.190': 6,
 }
 
 ip2UWBNumber = {
@@ -84,7 +90,7 @@ async def listen_socket():
 
 async def post_data(session: aiohttp.ClientSession):
     """ 上传各个小车的数据给后台服务器 """
-    url = "http://192.168.43.35:8080/car/insert"
+    url = "http://192.168.43.29:8080/car/insert"
     headers = {'content-type': 'application/json'}
     try:
         while True:
@@ -124,23 +130,25 @@ async def main():
                         + " *************" + '\n')
 
     target_car = car_map[6]
-    cars = [car_map[1], car_map[2], car_map[3], car_map[4], car_map[5]]
-
+    cars = [car_map[5]]
+    # while True:
+    #     await asyncio.sleep(0.1)
     while not target_car.connected or not all_cars_connected(car_list=cars):
         await asyncio.sleep(0.1)
-
     # session = aiohttp.ClientSession()
     # asyncio.create_task(post_data(session))
 
     try:
         while True:
-            await asyncio.sleep(0.5)
-            # if int(time.time()) % 10 == 0:
-            #     heart_beat_check()
-            selected_cars = top3_best_cars(target_car.position, cars)
-            if len(selected_cars) < 3:
-                print("可调度节点小于3！")
-                break
+            await asyncio.sleep(1)
+            # 心跳检测
+            if int(time.time()) % 10 == 0:
+                heart_beat_check()
+            # selected_cars = top3_best_cars(target_car.position, cars)
+            # if len(selected_cars) < 3:
+            #     print("可调度节点小于3！")
+            #     break
+            selected_cars = cars
             for car in selected_cars:
                 if not car.connected:
                     # 可能选出三辆小车后，断连，此时不应发送消息
@@ -157,11 +165,6 @@ async def main():
         await cmd_log.close()
         # await session.close()
         await asyncio.sleep(1)
-        for car in car_map.values():
-            if len(car.temp_list) != 0:
-                avg_time = sum(car.temp_list) / len(car.temp_list)
-                print("小车{0} 的平均下行间隔: {1}, 下行次数: {2}, 最长下行间隔: {3}, 最短下行间隔: {4}".format(
-                    car.car_number, avg_time, len(car.temp_list)+1, max(car.temp_list), min(car.temp_list)))
         print("服务器关闭！")
 
 

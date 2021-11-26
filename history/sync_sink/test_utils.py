@@ -19,66 +19,69 @@ class ControlKeyboard:
 
         :return:
         """
-        msg = []
+        msg, energy_consumption = "", 0
+        cmd = self.KEYBOARD_INPUT
         # 小车方向
-        if self.KEYBOARD_INPUT == 'w':  # 前
-            msg.append('$1,0,0,0,0,0,0,0,0#')
-            msg.append('$0,0,0,0,0,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'x':  # 后
-            msg.append('$2,0,0,0,0,0,0,0,0#')
-            msg.append('$0,0,0,0,0,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'a':  # 左
-            msg.append('$3,0,0,0,0,0,0,0,0#')
-            msg.append('$0,0,0,0,0,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'd':  # 右
-            msg.append('$4,0,0,0,0,0,0,0,0#')
-            msg.append('$0,0,0,0,0,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'z':  # 左转
-            msg.append('$0,1,0,0,0,0,0,0,0#')
-            msg.append('$0,0,0,0,0,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'c':  # 右转
-            msg.append('$0,2,0,0,0,0,0,0,0#')
-            msg.append('$0,0,0,0,0,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 's':  # 停
-            msg.append('$0,0,0,0,0,0,0,0,0#')
+        if cmd == 'w':  # 前
+            msg = '$1,0,0,0,0,0,0,0,0#'
+            energy_consumption = 0.4
+        elif cmd == 'quick':  # 快速前
+            msg = '$5,0,0,0,0,0,0,0,0#'
+            energy_consumption = 0.6
+        elif cmd == 'slow':  # 慢速前
+            msg = '$6,0,0,0,0,0,0,0,0#'
+            energy_consumption = 0.2
+        elif cmd == 'x':  # 后
+            msg = '$2,0,0,0,0,0,0,0,0#'
+            energy_consumption = 0.4
+        elif cmd == 'a':  # 左
+            msg = '$3,0,0,0,0,0,0,0,0#$0,0,0,0,0,0,0,0,0#'
+            energy_consumption = 0.2
+        elif cmd == 'd':  # 右
+            msg = '$4,0,0,0,0,0,0,0,0#$0,0,0,0,0,0,0,0,0#'
+            energy_consumption = 0.2
+        elif cmd == 'z':  # 左转
+            msg = '$0,1,0,0,0,0,0,0,0#$0,0,0,0,0,0,0,0,0#'
+            energy_consumption = 0.2
+        elif cmd == 'c':  # 右转
+            msg = '$0,2,0,0,0,0,0,0,0#$0,0,0,0,0,0,0,0,0#'
+            energy_consumption = 0.2
+        elif cmd == 's':  # 停
+            msg = '$0,0,0,0,0,0,0,0,0#'
 
-        # 摄像头方向
-        elif self.KEYBOARD_INPUT == 'i':  # 上
-            msg.append('$0,0,0,0,3,0,0,0,0#')
+            # 灯开关控制
+        elif cmd == 'v':  # 开
+            msg = '$0,0,0,0,0,0,1,0,0#'
+        elif cmd == 'b':  # 关
+            msg = '$0,0,0,0,0,0,8,0,0#'
+
+            # 摄像头方向
+        elif cmd == 'i':  # 上
+            msg = '$0,0,0,0,3,0,0,0,0#'
             # msg.append('$0,0,0,0,8,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'm':  # 下
-            msg.append('$0,0,0,0,4,0,0,0,0#')
+        elif cmd == 'm':  # 下
+            msg = '$0,0,0,0,4,0,0,0,0#'
             # msg.append('$0,0,0,0,8,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'j':  # 左
-            msg.append('$0,0,0,0,6,0,0,0,0#')
+        elif cmd == 'j':  # 左
+            msg = '$0,0,0,0,6,0,0,0,0#'
             # msg.append('$0,0,0,0,8,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'l':  # 右
-            msg.append('$0,0,0,0,7,0,0,0,0#')
+        elif cmd == 'l':  # 右
+            msg = '$0,0,0,0,7,0,0,0,0#'
             # msg.append('$0,0,0,0,8,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'k':  # 停
-            msg.append('$0,0,0,0,8,0,0,0,0#')
+        elif cmd == 'k':  # 停
+            msg = '$0,0,0,0,8,0,0,0,0#'
 
-        # 超声波控制
-        elif self.KEYBOARD_INPUT == 'r':  # 左
-            msg.append('$0,0,0,0,1,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 't':  # 中
-            msg.append('$0,0,0,0,0,0,0,0,1#')
-        elif self.KEYBOARD_INPUT == 'y':  # 右
-            msg.append('$0,0,0,0,2,0,0,0,0#')
+            # 超声波控制
+        elif cmd == 'r':  # 左
+            msg = '$0,0,0,0,1,0,0,0,0#'
+        elif cmd == 't':  # 中
+            msg = '$0,0,0,0,0,0,0,0,1#'
+        elif cmd == 'y':  # 右
+            msg = '$0,0,0,0,2,0,0,0,0#'
 
-        # 灯开关控制
-        elif self.KEYBOARD_INPUT == 'v':  # 开
-            msg.append('$0,0,0,0,0,0,1,0,0#')
-        elif self.KEYBOARD_INPUT == 'b':  # 关
-            msg.append('$0,0,0,0,0,0,8,0,0#')
-
-        # 其他功能
-        elif self.KEYBOARD_INPUT == 'f':  # 鸣笛
-            msg.append('$0,0,1,0,0,0,0,0,0#')
-        elif self.KEYBOARD_INPUT == 'g':  # 灭火
-            msg.append('$0,0,0,0,0,0,0,1,0#')
-
-        return msg
+        print(msg)
+        print(energy_consumption)
+        return msg, energy_consumption
 
 
 def target_move(target: Car, randomly: bool):

@@ -26,7 +26,7 @@ ROOT_PATH = get_root_path()
 total_car_number = 5
 # 小车ip->小车编号的映射表，需要根据小车的实际ip来改
 ip2CarNumber = {
-    '192.168.43.82': 1,
+    '192.168.43.173': 1,
     '192.168.43.64': 2,
     '192.168.43.40': 3,
     '192.168.43.242': 5,
@@ -50,7 +50,7 @@ for i in range(1, 4):
 # lock = threading.Lock()
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # sink 的socket监听地址，需要按照实际ip地址修改，端口号可以不改
-host = '192.168.43.230'
+host = '192.168.43.231'
 port = 8888
 server.bind((host, port))
 server.listen(total_car_number + 3)
@@ -104,7 +104,9 @@ def main(control):
     car = car_map[1]
     try:
         count = 0
-        while True and count < 100:
+        while not car.connected:
+            pass
+        while True:
             # 自动追踪
             if not control and car.gps is not None:
                 info = move_forward_target(car, target_position)
@@ -115,16 +117,23 @@ def main(control):
             # 手动控制小车，需要自己按键盘下发指令
             if control:
                 # 获取键盘输入
-                keyboard_input = msvcrt.getch().decode('utf-8')
-                if keyboard_input == '\x1b':  # Esc键关闭服务器
-                    print("服务器关闭！")
-                    break
-                if keyboard_input == '=':
-                    data, energy_consumption = get_control('quick')
-                elif keyboard_input == '-':
-                    data, energy_consumption = get_control('slow')
-                else:
-                    data, energy_consumption = ControlKeyboard(keyboard_input).get_control()
+                # keyboard_input = msvcrt.getch().decode('utf-8')
+                # if keyboard_input == '\x1b':  # Esc键关闭服务器
+                #     print("服务器关闭！")
+                #     break
+                # if keyboard_input == '=':
+                #     data, energy_consumption = get_control('quick')
+                # elif keyboard_input == '-':
+                #     data, energy_consumption = get_control('slow')
+                # else:
+                #     data, energy_consumption = ControlKeyboard(keyboard_input).get_control()
+                energy_consumption = 0
+                data = '$3,0,0,0,0,0,0,0,0#$0,0,0,0,0,0,0,0,0#'
+                car.send(data, energy_consumption)
+                data = '$6,0,0,0,0,0,0,0,0#'
+                car.send(data, energy_consumption)
+                time.sleep(2)
+                data = '$0,0,0,0,0,0,0,0,0#'
                 car.send(data, energy_consumption)
     except Exception:
         traceback.print_exc()

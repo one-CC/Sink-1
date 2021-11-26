@@ -17,72 +17,64 @@ def get_control(cmd: str):
     :param cmd:     要完成的动作
     :return:    控制小车的指令列表, 能耗
     """
-    msg, energy_consumption = [], 0
+    msg, energy_consumption = "", 0
     # 小车方向
     if cmd == 'w':  # 前
-        msg.append('$1,0,0,0,0,0,0,0,0#')
-        msg.append('$0,0,0,0,0,0,0,0,0#')
+        msg = '$1,0,0,0,0,0,0,0,0#'
         energy_consumption = 0.4
     elif cmd == 'quick':  # 快速前
-        msg.append('$5,0,0,0,0,0,0,0,0#')
-        msg.append('$0,0,0,0,0,0,0,0,0#')
+        msg = '$5,0,0,0,0,0,0,0,0#'
         energy_consumption = 0.6
     elif cmd == 'slow':  # 慢速前
-        msg.append('$6,0,0,0,0,0,0,0,0#')
-        msg.append('$0,0,0,0,0,0,0,0,0#')
+        msg = '$6,0,0,0,0,0,0,0,0#'
         energy_consumption = 0.2
     elif cmd == 'x':  # 后
-        msg.append('$2,0,0,0,0,0,0,0,0#')
-        msg.append('$0,0,0,0,0,0,0,0,0#')
+        msg = '$2,0,0,0,0,0,0,0,0#'
         energy_consumption = 0.4
     elif cmd == 'a':  # 左
-        msg.append('$3,0,0,0,0,0,0,0,0#')
-        msg.append('$0,0,0,0,0,0,0,0,0#')
+        msg = '$3,0,0,0,0,0,0,0,0#$0,0,0,0,0,0,0,0,0#'
         energy_consumption = 0.2
     elif cmd == 'd':  # 右
-        msg.append('$4,0,0,0,0,0,0,0,0#')
-        msg.append('$0,0,0,0,0,0,0,0,0#')
+        msg = '$4,0,0,0,0,0,0,0,0#$0,0,0,0,0,0,0,0,0#'
         energy_consumption = 0.2
     elif cmd == 'z':  # 左转
-        msg.append('$0,1,0,0,0,0,0,0,0#')
-        msg.append('$0,0,0,0,0,0,0,0,0#')
+        msg = '$0,1,0,0,0,0,0,0,0#$0,0,0,0,0,0,0,0,0#'
         energy_consumption = 0.2
     elif cmd == 'c':  # 右转
-        msg.append('$0,2,0,0,0,0,0,0,0#')
-        msg.append('$0,0,0,0,0,0,0,0,0#')
+        msg = '$0,2,0,0,0,0,0,0,0#$0,0,0,0,0,0,0,0,0#'
         energy_consumption = 0.2
     elif cmd == 's':  # 停
-        msg.append('$0,0,0,0,0,0,0,0,0#')
+        msg = '$0,0,0,0,0,0,0,0,0#'
 
-    # 灯开关控制
+        # 灯开关控制
     elif cmd == 'v':  # 开
-        msg.append('$0,0,0,0,0,0,1,0,0#')
+        msg = '$0,0,0,0,0,0,1,0,0#'
     elif cmd == 'b':  # 关
-        msg.append('$0,0,0,0,0,0,8,0,0#')
+        msg = '$0,0,0,0,0,0,8,0,0#'
 
         # 摄像头方向
     elif cmd == 'i':  # 上
-        msg.append('$0,0,0,0,3,0,0,0,0#')
+        msg = '$0,0,0,0,3,0,0,0,0#'
         # msg.append('$0,0,0,0,8,0,0,0,0#')
     elif cmd == 'm':  # 下
-        msg.append('$0,0,0,0,4,0,0,0,0#')
+        msg = '$0,0,0,0,4,0,0,0,0#'
         # msg.append('$0,0,0,0,8,0,0,0,0#')
     elif cmd == 'j':  # 左
-        msg.append('$0,0,0,0,6,0,0,0,0#')
+        msg = '$0,0,0,0,6,0,0,0,0#'
         # msg.append('$0,0,0,0,8,0,0,0,0#')
     elif cmd == 'l':  # 右
-        msg.append('$0,0,0,0,7,0,0,0,0#')
+        msg = '$0,0,0,0,7,0,0,0,0#'
         # msg.append('$0,0,0,0,8,0,0,0,0#')
     elif cmd == 'k':  # 停
-        msg.append('$0,0,0,0,8,0,0,0,0#')
+        msg = '$0,0,0,0,8,0,0,0,0#'
 
-    # 超声波控制
+        # 超声波控制
     elif cmd == 'r':  # 左
-        msg.append('$0,0,0,0,1,0,0,0,0#')
+        msg = '$0,0,0,0,1,0,0,0,0#'
     elif cmd == 't':  # 中
-        msg.append('$0,0,0,0,0,0,0,0,1#')
+        msg = '$0,0,0,0,0,0,0,0,1#'
     elif cmd == 'y':  # 右
-        msg.append('$0,0,0,0,2,0,0,0,0#')
+        msg = '$0,0,0,0,2,0,0,0,0#'
 
     return msg, energy_consumption
 
@@ -110,12 +102,12 @@ async def move_forward_target(car: Car, target_position: list, variable_speed=Fa
     """
     vector = [target_position[0] - car.position[0], target_position[1] - car.position[1]]
     distance = calculate_distance(vector, [0, 0])
-    msgs, energy_consumption, info = None, 0, None
+    msg, energy_consumption, info = None, 0, None
     if distance <= 3:
         # 距离小于四米，则不移动
-        msgs, energy_consumption = get_control("s")
+        msg, energy_consumption = get_control("s")
         info = "Action：原地不动"
-        asyncio.create_task(car.send(msgs, energy_consumption))
+        asyncio.create_task(car.send(msg, energy_consumption))
         time_string = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + " 小车" + str(car.car_number)
         return "{0}：{1}".format(time_string, info)
     angle = calculate_angle(vector)
@@ -130,28 +122,28 @@ async def move_forward_target(car: Car, target_position: list, variable_speed=Fa
         # 小夹角情况下，直接向前走
         info = "Action：直接向前走"
         if variable_speed and distance > 6:
-            msgs, energy_consumption = get_control('quick')
+            msg, energy_consumption = get_control('quick')
         elif variable_speed and distance > 3:
-            msgs, energy_consumption = get_control('w')
+            msg, energy_consumption = get_control('w')
         else:
-            msgs, energy_consumption = get_control("w")
+            msg, energy_consumption = get_control("quick")
     elif 30 < angle_diff <= 90 or -330 <= angle_diff < -270:
         # 右转
         info = "Action：右转"
-        msgs, energy_consumption = get_control("d")
+        msg, energy_consumption = get_control("d")
     elif -90 <= angle_diff < -30 or 270 <= angle_diff < 330:
         # 左转
         info = "Action：左转"
-        msgs, energy_consumption = get_control("a")
+        msg, energy_consumption = get_control("a")
     elif 90 < angle_diff <= 180 or -270 <= angle_diff < -180:
         # 原地右转
         info = "Action：原地右转"
-        msgs, energy_consumption = get_control("c")
+        msg, energy_consumption = get_control("c")
     elif -180 <= angle_diff < -90 or 180 < angle_diff < 270:
         # 原地左转
         info = "Action：原地左转"
-        msgs, energy_consumption = get_control("z")
-    asyncio.create_task(car.send(msgs, energy_consumption))
+        msg, energy_consumption = get_control("z")
+    asyncio.create_task(car.send(msg, energy_consumption))
     time_string = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] + " 小车" + str(car.car_number)
     return "{0}：位置向量的角度：{1}\t小车朝向角度：{2}\t{3}".format(time_string, angle, projected_car_angle, info)
 
@@ -174,7 +166,8 @@ def top3_best_cars(target_position: list, car_list: List[Car]) -> List[Car]:
     for car in connected_car_list:
         distance = calculate_distance(car.position, target_position)
         # 计算得分, 偏重于距离
-        score = 0 if car.battery < 5 else 200 * (1 - (distance - min_distance) / (max_distance - min_distance)) + car.battery
+        score = 0 if car.battery < 5 else 200 * (
+                1 - (distance - min_distance) / (max_distance - min_distance)) + car.battery
         if score > 0:
             score_map[score] = car
     info = "选择小车："
